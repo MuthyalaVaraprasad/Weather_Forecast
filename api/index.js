@@ -143,6 +143,16 @@ app.get('/api/weather', async (req, res) => {
     mockData.latitude = lat;
     mockData.longitude = lon;
     
+    // Set custom simulated AQI
+    const mockAqiIndex = Math.floor(Math.random() * 3) + 1; // 1 to 3
+    const aqiLabels = { 1: "Good", 2: "Fair", 3: "Moderate" };
+    mockData.aqi = {
+      index: mockAqiIndex,
+      label: aqiLabels[mockAqiIndex],
+      pm25: Math.round((8 + Math.random() * 12) * 10) / 10,
+      pm10: Math.round((15 + Math.random() * 20) * 10) / 10
+    };
+    
     // Slight noise to make values feel live
     const noise = (Math.random() - 0.5) * 4;
     mockData.current.temperature_2m = Math.round((mockData.current.temperature_2m + noise) * 10) / 10;
@@ -160,10 +170,13 @@ app.get('/api/weather', async (req, res) => {
     const currentUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric`;
     // Call 5-day / 3-hour forecast
     const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric`;
+    // Call Air Pollution API
+    const pollutionUrl = `https://api.openweathermap.org/data/2.5/air_pollution?lat=${lat}&lon=${lon}&appid=${API_KEY}`;
 
-    const [currentRes, forecastRes] = await Promise.all([
+    const [currentRes, forecastRes, pollutionRes] = await Promise.all([
       fetch(currentUrl),
-      fetch(forecastUrl)
+      fetch(forecastUrl),
+      fetch(pollutionUrl)
     ]);
 
     if (!currentRes.ok || !forecastRes.ok) {
@@ -172,6 +185,14 @@ app.get('/api/weather', async (req, res) => {
 
     const currentData = await currentRes.json();
     const forecastData = await forecastRes.json();
+    let pollutionData = null;
+    if (pollutionRes && pollutionRes.ok) {
+      try {
+        pollutionData = await pollutionRes.json();
+      } catch (e) {
+        console.error("Failed to parse pollution JSON", e);
+      }
+    }
 
     // Map OWM Current Weather
     const currentCode = currentData.weather[0] ? currentData.weather[0].id : 800;
@@ -258,6 +279,19 @@ app.get('/api/weather', async (req, res) => {
       uv_index_max: dailyUv
     };
 
+    const aqiIndex = pollutionData?.list?.[0]?.main?.aqi || 1;
+    const pm25 = pollutionData?.list?.[0]?.components?.pm2_5 || 0;
+    const pm10 = pollutionData?.list?.[0]?.components?.pm10 || 0;
+
+    const aqiLabels = {
+      1: "Good",
+      2: "Fair",
+      3: "Moderate",
+      4: "Poor",
+      5: "Very Poor"
+    };
+    const aqiLabel = aqiLabels[aqiIndex] || "Unknown";
+
     // Combined Adapted Response
     const responsePayload = {
       cityName,
@@ -265,7 +299,13 @@ app.get('/api/weather', async (req, res) => {
       longitude: lon,
       current: formattedCurrent,
       hourly: formattedHourly,
-      daily: formattedDaily
+      daily: formattedDaily,
+      aqi: {
+        index: aqiIndex,
+        label: aqiLabel,
+        pm25,
+        pm10
+      }
     };
 
     setCache(cacheKey, responsePayload, 600); // Cache weather payload for 10 mins

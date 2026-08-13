@@ -144,6 +144,49 @@ export default function App() {
   const [isCelsius, setIsCelsius] = useState(true);
   const [isLightning, setIsLightning] = useState(false);
 
+  // Favorites state and logic
+  const [favorites, setFavorites] = useState(() => {
+    try {
+      const saved = localStorage.getItem('weather_favorites');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem('weather_favorites', JSON.stringify(favorites));
+  }, [favorites]);
+
+  const getActiveCoords = () => {
+    if (weatherData?.latitude && weatherData?.longitude) {
+      return { lat: weatherData.latitude, lon: weatherData.longitude };
+    }
+    try {
+      const cached = localStorage.getItem('cached_weather_city');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        return { lat: parsed.lat, lon: parsed.lon };
+      }
+    } catch (e) {}
+    return { lat: 51.5074, lon: -0.1278 };
+  };
+
+  const toggleFavorite = () => {
+    if (!weatherData) return;
+    const cityName = weatherData.cityName;
+    const { lat, lon } = getActiveCoords();
+
+    const isFav = favorites.some(f => f.name === cityName);
+    if (isFav) {
+      setFavorites(favorites.filter(f => f.name !== cityName));
+    } else {
+      setFavorites([...favorites, { name: cityName, lat, lon }]);
+    }
+  };
+
+  const isCurrentFavorite = weatherData ? favorites.some(f => f.name === weatherData.cityName) : false;
+
   // Search States
   const [searchTerm, setSearchTerm] = useState('');
   const [suggestions, setSuggestions] = useState([]);
@@ -505,6 +548,25 @@ export default function App() {
             </div>
           </header>
 
+          {/* Starred Locations Quick Bar */}
+          {favorites.length > 0 && (
+            <div className="favorites-bar">
+              <span className="favorites-title">Starred:</span>
+              <div className="favorites-list">
+                {favorites.map((city, idx) => (
+                  <button 
+                    key={idx} 
+                    className="favorite-chip"
+                    onClick={() => fetchWeather(city.lat, city.lon, city.name)}
+                  >
+                    <MapPin style={{ width: 11, height: 11, marginRight: 4, color: 'var(--accent-blue)' }} />
+                    {city.name.split(',')[0]}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Grid Layout */}
           <main className="dashboard-grid">
             {/* Left Column */}
@@ -514,6 +576,27 @@ export default function App() {
                 <div className="location">
                   <MapPin style={{ width: 20, height: 20, color: 'var(--accent-blue)' }} />
                   <span>{weatherData.cityName}</span>
+                  <button 
+                    onClick={toggleFavorite} 
+                    className={`btn-favorite ${isCurrentFavorite ? 'starred' : ''}`}
+                    title={isCurrentFavorite ? "Remove from Favorites" : "Add to Favorites"}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', marginLeft: 8 }}
+                  >
+                    <svg 
+                      xmlns="http://www.w3.org/2000/svg" 
+                      width="18" 
+                      height="18" 
+                      viewBox="0 0 24 24" 
+                      fill={isCurrentFavorite ? "var(--accent-yellow)" : "none"} 
+                      stroke={isCurrentFavorite ? "var(--accent-yellow)" : "var(--text-muted)"} 
+                      strokeWidth="2" 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round"
+                      style={{ transition: 'all 0.2s ease' }}
+                    >
+                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                    </svg>
+                  </button>
                 </div>
                 <div className="date">
                   {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
@@ -629,6 +712,34 @@ export default function App() {
                     <span className="detail-value">{Math.round(current.pressure_msl)} hPa</span>
                   </div>
                 </div>
+
+                {/* Air Quality (AQI) */}
+                {weatherData.aqi && (
+                  <div className="glass-panel detail-card">
+                    <div className="detail-icon-wrapper">
+                      <Wind style={{ width: 22, height: 22 }} />
+                    </div>
+                    <div className="detail-info">
+                      <span className="detail-label">Air Quality</span>
+                      <span className="detail-value">{weatherData.aqi.label}</span>
+                      <span className="detail-subtext">Index: {weatherData.aqi.index}/5</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* PM2.5 Dust */}
+                {weatherData.aqi && (
+                  <div className="glass-panel detail-card">
+                    <div className="detail-icon-wrapper">
+                      <CloudFog style={{ width: 22, height: 22 }} />
+                    </div>
+                    <div className="detail-info">
+                      <span className="detail-label">PM2.5 Dust</span>
+                      <span className="detail-value">{weatherData.aqi.pm25.toFixed(1)} µg/m³</span>
+                      <span className="detail-subtext">Fine particles</span>
+                    </div>
+                  </div>
+                )}
               </section>
 
               {/* Hourly Forecast */}
