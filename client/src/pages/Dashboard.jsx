@@ -85,7 +85,7 @@ export default function Dashboard({
                   key={idx} 
                   className="suggestion-item"
                   onClick={() => {
-                    fetchWeather(city.latitude, city.longitude, `${city.name}, ${city.country}`);
+                    fetchWeather(`${city.name}, ${city.country}`);
                     setSearchTerm('');
                     setIsSuggestionsActive(false);
                   }}
@@ -122,7 +122,7 @@ export default function Dashboard({
                   <button 
                     key={idx} 
                     className="favorite-chip"
-                    onClick={() => fetchWeather(city.lat, city.lon, city.name)}
+                    onClick={() => fetchWeather(city.name)}
                   >
                     <MapPin style={{ width: 11, height: 11, marginRight: 4, color: 'var(--accent-yellow)' }} />
                     {city.name.split(',')[0]}
@@ -140,7 +140,7 @@ export default function Dashboard({
                   <button 
                     key={idx} 
                     className="favorite-chip"
-                    onClick={() => fetchWeather(city.lat, city.lon, city.name)}
+                    onClick={() => fetchWeather(city.name)}
                   >
                     <Clock style={{ width: 11, height: 11, marginRight: 4, color: 'var(--accent-blue)' }} />
                     {city.name.split(',')[0]}
@@ -191,7 +191,7 @@ export default function Dashboard({
                 <span>Last updated at: {weatherData.fetchedAt}</span>
                 {hasError && (
                   <button 
-                    onClick={() => fetchWeather(lastCoords.current.lat, lastCoords.current.lon)}
+                    onClick={() => fetchWeather({ lat: lastCoords.current.lat, lon: lastCoords.current.lon })}
                     style={{
                       background: 'rgba(239, 68, 68, 0.25)',
                       border: '1px solid var(--accent-red)',

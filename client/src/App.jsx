@@ -142,6 +142,14 @@ export default function App() {
     }
   };
 
+  const handleFetchWeather = async (target) => {
+    if (typeof target === 'string') {
+      await fetchWeatherByCity(target);
+    } else if (target && target.lat && target.lon) {
+      await fetchWeather(target.lat, target.lon, target.name || '');
+    }
+  };
+
   // Automatic GPS Geolocation lookup
   const getUserLocation = () => {
     setLoadingText("Detecting your location...");
@@ -332,7 +340,7 @@ export default function App() {
       {showPrompt && !loading && (
         <FallbackPrompt 
           popularCities={POPULAR_CITIES}
-          fetchWeather={fetchWeatherByCity}
+          fetchWeather={handleFetchWeather}
           modalSearchTerm={modalSearchTerm}
           handleModalSearchChange={handleModalSearchChange}
           isModalSuggestionsActive={isModalSuggestionsActive}
@@ -363,7 +371,7 @@ export default function App() {
           setIsSuggestionsActive={setIsSuggestionsActive}
           searchContainerRef={searchContainerRef}
           getUserLocation={getUserLocation}
-          fetchWeather={fetchWeatherByCity}
+          fetchWeather={handleFetchWeather}
           hasError={hasError}
           lastCoords={lastCoords}
           toFahrenheit={toFahrenheit}

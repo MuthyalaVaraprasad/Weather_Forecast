@@ -70,12 +70,15 @@ export const getCoordsByCityName = async (city, apiKey) => {
     };
   } catch (error) {
     if (error.response) {
-      if (error.response.status === 401) {
-        throw new Error("Invalid API key. Please check your OpenWeatherMap API credentials.");
-      }
-      throw new Error(error.response.data?.message || "Geocoding check failed.");
+      const err = new Error(error.response.status === 401 
+        ? "Invalid API key. Please check your OpenWeatherMap API credentials."
+        : (error.response.data?.message || "Geocoding check failed."));
+      err.status = error.response.status;
+      throw err;
     } else if (error.request) {
-      throw new Error("Network failure. OpenWeatherMap geocoder is unreachable.");
+      const err = new Error("Network failure. OpenWeatherMap geocoder is unreachable.");
+      err.status = 503;
+      throw err;
     }
     throw error;
   }
@@ -109,12 +112,15 @@ export const searchLocations = async (query, apiKey) => {
     }));
   } catch (error) {
     if (error.response) {
-      if (error.response.status === 401) {
-        throw new Error("Invalid API key. Please check your OpenWeatherMap API credentials.");
-      }
-      throw new Error(error.response.data?.message || "Geocoding query error.");
+      const err = new Error(error.response.status === 401
+        ? "Invalid API key. Please check your OpenWeatherMap API credentials."
+        : (error.response.data?.message || "Geocoding query error."));
+      err.status = error.response.status;
+      throw err;
     } else if (error.request) {
-      throw new Error("Network failure. Geocoding endpoints are currently unreachable.");
+      const err = new Error("Network failure. Geocoding endpoints are currently unreachable.");
+      err.status = 503;
+      throw err;
     }
     throw error;
   }
@@ -139,19 +145,27 @@ export const fetchWeatherData = async (lat, lon, apiKey) => {
   } catch (error) {
     if (error.response) {
       const status = error.response.status;
+      let msg = "Request failed.";
       if (status === 401) {
-        throw new Error("Invalid API key. Please check your OpenWeatherMap API credentials.");
+        msg = "Invalid API key. Please check your OpenWeatherMap API credentials.";
       } else if (status === 404) {
-        throw new Error("City not found. Please check the coordinates and try again.");
+        msg = "City not found. Please check the coordinates and try again.";
       } else if (status === 429) {
-        throw new Error("OpenWeatherMap API rate limit exceeded. Please try again later.");
+        msg = "OpenWeatherMap API rate limit exceeded. Please try again later.";
       } else {
-        throw new Error(`OpenWeatherMap API error: ${error.response.data?.message || "Request failed"}`);
+        msg = `OpenWeatherMap API error: ${error.response.data?.message || "Request failed"}`;
       }
+      const err = new Error(msg);
+      err.status = status;
+      throw err;
     } else if (error.request) {
-      throw new Error("API unavailable. OpenWeatherMap servers are currently unreachable.");
+      const err = new Error("API unavailable. OpenWeatherMap servers are currently unreachable.");
+      err.status = 503;
+      throw err;
     } else {
-      throw new Error(error.message || "Unexpected response during weather fetch.");
+      const err = new Error(error.message || "Unexpected response during weather fetch.");
+      err.status = 500;
+      throw err;
     }
   }
 

@@ -32,7 +32,7 @@ export default function FallbackPrompt({
             <button 
               key={city.name} 
               className="btn-quick-city"
-              onClick={() => fetchWeather(city.lat, city.lon, city.name)}
+              onClick={() => fetchWeather(city.name)}
             >
               {city.name}
             </button>
@@ -55,7 +55,7 @@ export default function FallbackPrompt({
                 key={idx} 
                 className="suggestion-item"
                 onClick={() => {
-                  fetchWeather(city.latitude, city.longitude, `${city.name}, ${city.country}`);
+                  fetchWeather(`${city.name}, ${city.country}`);
                   setModalSearchTerm('');
                   setIsModalSuggestionsActive(false);
                 }}
@@ -72,7 +72,7 @@ export default function FallbackPrompt({
         
         {hasError && (
           <button 
-            onClick={() => fetchWeather(lastCoords.current.lat, lastCoords.current.lon)}
+            onClick={() => fetchWeather({ lat: lastCoords.current.lat, lon: lastCoords.current.lon })}
             style={{
               background: 'rgba(239, 68, 68, 0.15)',
               border: '1px solid var(--accent-red)',
