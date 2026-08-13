@@ -78,6 +78,12 @@ app.get('/api/search', async (req, res) => {
     return res.json({ results: [] });
   }
 
+  // Validate input: permit only letters, spaces, and punctuation
+  const cityRegex = /^[a-zA-Z\s-,\u00C0-\u017F]+$/;
+  if (!cityRegex.test(query)) {
+    return res.json({ results: [], warning: "Invalid input query. Numbers and special characters are forbidden." });
+  }
+
   const cacheKey = `search:${query.toLowerCase()}`;
   const cachedData = getCache(cacheKey);
   if (cachedData) {

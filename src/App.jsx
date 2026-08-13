@@ -3,7 +3,7 @@ import {
   SunDim, MapPin, MapPinOff, Thermometer, Droplets, Wind, Sun, 
   CloudRain, Gauge, Clock, Calendar, Map as MapIcon, AlertCircle, 
   ArrowUp, ArrowDown, Moon, CloudSun, CloudMoon, Cloud, CloudFog, 
-  CloudDrizzle, Snowflake, CloudLightning, Droplet
+  CloudDrizzle, Snowflake, CloudLightning, Droplet, RefreshCw
 } from 'lucide-react';
 
 // WMO Weather Codes mapping to description, icons, and body background classes
@@ -144,6 +144,22 @@ export default function App() {
   const [isCelsius, setIsCelsius] = useState(true);
   const [isLightning, setIsLightning] = useState(false);
 
+  // Offline and connection failure trackers
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const [hasError, setHasError] = useState(false);
+  const lastCoords = useRef({ lat: 51.5074, lon: -0.1278 });
+
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
   // Favorites state and logic
   const [favorites, setFavorites] = useState(() => {
     try {
@@ -219,6 +235,17 @@ export default function App() {
   const [isModalSuggestionsActive, setIsModalSuggestionsActive] = useState(false);
   const modalSearchContainerRef = useRef(null);
 
+  // Input validation handlers
+  const handleSearchChange = (val) => {
+    const filtered = val.replace(/[^a-zA-Z\s-,\u00C0-\u017F]/g, '');
+    setSearchTerm(filtered);
+  };
+
+  const handleModalSearchChange = (val) => {
+    const filtered = val.replace(/[^a-zA-Z\s-,\u00C0-\u017F]/g, '');
+    setModalSearchTerm(filtered);
+  };
+
   // Error Toast State
   const [toastMsg, setToastMsg] = useState('');
   const [isToastActive, setIsToastActive] = useState(false);
@@ -240,14 +267,24 @@ export default function App() {
 
   // Fetch API proxy helper
   const fetchWeather = async (lat, lon, cityName = '') => {
+    if (!navigator.onLine) {
+      setIsOffline(true);
+      showError("Offline Mode: Unable to contact servers. Showing last known weather.");
+      return;
+    }
+
     setLoading(true);
     setShowPrompt(false);
+    lastCoords.current = { lat, lon };
+
     try {
       const response = await fetch(`/api/weather?lat=${lat}&lon=${lon}`);
       if (!response.ok) throw new Error("Could not download weather data");
       const data = await response.json();
       
       setWeatherData(data);
+      setHasError(false);
+
       // Cache coordinates and backend resolved city name
       localStorage.setItem('cached_weather_city', JSON.stringify({
         lat,
@@ -259,7 +296,8 @@ export default function App() {
       addToHistory(cityName || data.cityName, lat, lon);
     } catch (e) {
       console.error(e);
-      showError("Connection failed. Operating in fallback mode.");
+      setHasError(true);
+      showError("Network Error: Failed to retrieve weather forecast details.");
       if (!weatherData) setShowPrompt(true);
     } finally {
       setLoading(false);
@@ -438,6 +476,29 @@ export default function App() {
 
   return (
     <div style={{ filter: isLightning ? 'brightness(2.2) saturate(1.2)' : undefined, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      {/* Offline Warning Banner */}
+      {isOffline && (
+        <div style={{
+          width: '100%',
+          background: 'rgba(239, 68, 68, 0.9)',
+          color: 'white',
+          textAlign: 'center',
+          padding: '0.65rem',
+          fontSize: '0.85rem',
+          fontWeight: 600,
+          position: 'sticky',
+          top: 0,
+          zIndex: 3000,
+          backdropFilter: 'blur(5px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '8px'
+        }}>
+          <AlertCircle style={{ width: 16, height: 16 }} />
+          <span>You are currently offline. Displaying cached weather details.</span>
+        </div>
+      )}
       {/* Background Particle Layer */}
       {current && <BackgroundParticles code={current.weather_code} isDay={current.is_day} />}
 
@@ -482,7 +543,7 @@ export default function App() {
                   className="search-input" 
                   placeholder="Or search for a city manually..."
                   value={modalSearchTerm}
-                  onChange={(e) => setModalSearchTerm(e.target.value)}
+                  onChange={(e) => handleModalSearchChange(e.target.value)}
                 />
               </div>
               <div className={`suggestions-box ${isModalSuggestionsActive ? 'active' : ''}`}>
@@ -505,6 +566,30 @@ export default function App() {
                 ))}
               </div>
             </div>
+            {hasError && (
+              <button 
+                onClick={() => fetchWeather(lastCoords.current.lat, lastCoords.current.lon)}
+                style={{
+                  background: 'rgba(239, 68, 68, 0.15)',
+                  border: '1px solid var(--accent-red)',
+                  color: 'white',
+                  borderRadius: '12px',
+                  padding: '0.75rem 1rem',
+                  fontSize: '0.85rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  marginTop: '1.25rem',
+                  transition: 'all 0.2s ease',
+                  width: '100%'
+                }}
+              >
+                <RefreshCw style={{ width: 14, height: 14 }} /> Retry Connection
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -527,7 +612,7 @@ export default function App() {
                     className="search-input" 
                     placeholder="Search for a city..." 
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onChange={(e) => handleSearchChange(e.target.value)}
                   />
                   <button 
                     className="btn-locate" 
@@ -647,8 +732,29 @@ export default function App() {
                   {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
                 </div>
                 {weatherData.fetchedAt && (
-                  <div className="last-updated" style={{ fontSize: '0.78rem', color: 'var(--text-subtle)', marginTop: '-1.35rem', marginBottom: '1.25rem', opacity: 0.85 }}>
-                    Last updated at: {weatherData.fetchedAt}
+                  <div className="last-updated" style={{ fontSize: '0.78rem', color: 'var(--text-subtle)', marginTop: '-1.35rem', marginBottom: '1.25rem', opacity: 0.85, display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center' }}>
+                    <span>Last updated at: {weatherData.fetchedAt}</span>
+                    {hasError && (
+                      <button 
+                        onClick={() => fetchWeather(lastCoords.current.lat, lastCoords.current.lon)}
+                        style={{
+                          background: 'rgba(239, 68, 68, 0.25)',
+                          border: '1px solid var(--accent-red)',
+                          color: 'white',
+                          borderRadius: '999px',
+                          padding: '0.15rem 0.5rem',
+                          fontSize: '0.7rem',
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          borderWidth: '1px'
+                        }}
+                        title="Retry loading weather data"
+                      >
+                        <RefreshCw style={{ width: 10, height: 10 }} /> Retry
+                      </button>
+                    )}
                   </div>
                 )}
                 <div className="weather-hero">
