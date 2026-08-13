@@ -10,8 +10,20 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Enable CORS and body parsing
-app.use(cors());
+// Enable CORS with origin controls and body parsing
+const allowedOrigins = [
+  'http://localhost:5173',
+  'https://weatherapp-smoky-three.vercel.app'
+];
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Blocked by CORS policy.'));
+    }
+  }
+}));
 app.use(express.json());
 
 // Set up serverless API routes

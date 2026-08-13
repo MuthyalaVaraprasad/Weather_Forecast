@@ -37,7 +37,8 @@ export const reverseGeocode = async (lat, lon) => {
   try {
     const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json&accept-language=en`;
     const response = await axios.get(url, {
-      headers: { 'User-Agent': 'AtmosphereWeatherProxy/1.0' }
+      headers: { 'User-Agent': 'AtmosphereWeatherProxy/1.0' },
+      timeout: 8000
     });
     const data = response.data;
     if (data && data.address) {
@@ -58,7 +59,7 @@ export const getCoordsByCityName = async (city, apiKey) => {
   }
   const geoUrl = `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(city)}&limit=1&appid=${apiKey}`;
   try {
-    const response = await axios.get(geoUrl);
+    const response = await axios.get(geoUrl, { timeout: 8000 });
     const data = response.data;
     if (!data || data.length === 0) {
       throw new Error("City not found. Please check the city name and try again.");
@@ -100,7 +101,7 @@ export const getMockCoordsByCityName = (city) => {
 export const searchLocations = async (query, apiKey) => {
   try {
     const geoUrl = `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(query)}&limit=5&appid=${apiKey}`;
-    const response = await axios.get(geoUrl);
+    const response = await axios.get(geoUrl, { timeout: 8000 });
     const data = response.data;
 
     return data.map(item => ({
@@ -138,9 +139,9 @@ export const fetchWeatherData = async (lat, lon, apiKey) => {
   try {
     // Async parallel requests using axios
     [currentRes, forecastRes, pollutionRes] = await Promise.all([
-      axios.get(currentUrl),
-      axios.get(forecastUrl),
-      axios.get(pollutionUrl)
+      axios.get(currentUrl, { timeout: 8000 }),
+      axios.get(forecastUrl, { timeout: 8000 }),
+      axios.get(pollutionUrl, { timeout: 8000 })
     ]);
   } catch (error) {
     if (error.response) {
