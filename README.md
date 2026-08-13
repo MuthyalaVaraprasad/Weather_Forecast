@@ -1,6 +1,6 @@
-# 🌤️ Atmosphere - Premium Glassmorphic Weather Dashboard
+# 🌤️ Atmosphere - Premium Full-Stack Weather Dashboard
 
-Atmosphere is a high-fidelity, state-of-the-art web application providing real-time weather forecasts and analytics. Featuring a premium glassmorphic UI, dynamic weather-based animated particles, interactive wind maps, and instant unit conversion, the app delivers a fluid, responsive weather intelligence dashboard tailored to any device.
+Atmosphere is a high-fidelity, state-of-the-art web application providing real-time weather forecasts, air quality indices (AQI), and wind radar analytics. Built using the **MERN** stack (React.js + Node.js/Express.js), the app secures API integrations behind a backend proxy, leverages server-side caching, tracks search history, manages favorite locations, and renders dynamic particle animations corresponding to current weather conditions.
 
 🚀 **Live Site Demo:** [weatherapp-smoky-three.vercel.app](https://weatherapp-smoky-three.vercel.app/)
 
@@ -8,83 +8,83 @@ Atmosphere is a high-fidelity, state-of-the-art web application providing real-t
 
 ## 🌟 Key Features
 
-1. **Precision Geolocation & Smart Fallback UI**:
-   - Seamlessly queries the browser's Geolocation API to instantly detect your local city.
-   - If coordinates are restricted or unavailable, it automatically switches to a beautiful fallback prompt modal offering popular cities (New York, London, Tokyo, Paris, Sydney, Singapore) and a live autocomplete search bar.
-   - Saves searches to `localStorage` to instantly bypass search alerts on return visits.
+1. **API Security Backend Proxy**:
+   - Routes all weather searches and forecast checks through a secure Node/Express backend.
+   - Hides your `OPENWEATHER_API_KEY` on the server-side, preventing API key exposure in the client browser.
 
 2. **Real-Time API Integrations**:
-   - Integrates keyless endpoints from **Open-Meteo API** to load current weather conditions, 24-hour hourly temperatures, and 7-day extended forecasts.
-   - Leverages **OSM Nominatim API** for reverse-geocoding coordinates to actual location names.
+   - Integrates secure calls to **OpenWeatherMap API** endpoints (Current Weather, 5-Day/3-Hour Forecasts, and Air Pollution tracking).
+   - Resolves location coordinates and names using **OSM Nominatim API**.
 
-3. **Interactive Windy.com Map Integration**:
-   - Embeds an interactive wind layer radar widget that automatically centers on your searched city's coordinates to let you inspect wind vectors.
+3. **Performance Optimization Caching**:
+   - Leverages server-side in-memory caching via `node-cache` (weather/pollution queries stored for 10 minutes, searches stored for 30 minutes) to minimize rate-limiting and maximize response times.
 
-4. **Dynamic Particle Backgrounds**:
-   - Spawns background particle systems responding to current WMO weather codes:
-     - **Clear Days**: Pulse solar rays.
-     - **Clear Nights**: Twinkle 40 stars.
-     - **Rain / Drizzle**: Animate falling rain lines.
-     - **Snow / Sleet**: Drift floating snowflakes.
-     - **Storms**: Fall rain coupled with random simulated lightning screen flashes.
+4. **Connection Failure & Fallback Resilience**:
+   - Includes real-time browser online/offline status banners.
+   - Embeds **Connection Retry** buttons on the dashboard and fallback overlays if calls fail.
+   - Implements a fail-safe Demo Mock Mode if OpenWeatherMap API keys are missing.
 
-5. **Locked Viewport Responsive Layout**:
-   - **Desktop Screens (>=1024px)**: Fits strictly to the screen viewport (`100vh`) with no main body scrollbar, allowing left and right panels to scroll independently.
-   - **Mobile Screens (<1024px)**: Collapses seamlessly to stack panels vertically with fluid mobile dimensions.
+5. **Search History & Favorites Manager**:
+   - Persists a dynamic "Recent Searches" history checklist (up to 5 cities).
+   - Allows users to star favored cities, saving bookmark locations to `localStorage` for rapid quick-chip navigation.
 
-6. **Instant Unit Switcher**:
-   - Switch between **Celsius (°C)** and **Fahrenheit (°F)** dynamically. Converts values instantly on the client side without triggering extra API requests.
+6. **Interactive Wind Radar**:
+   - Embeds a Windy.com live wind vector vector radar centered on search coordinates.
+
+7. **Dynamic Particle Sky Backgrounds**:
+   - Renders background animations mapped to active weather states (sun rays, twinkling stars, snowflakes, falling rain, and stormy lightning flashes).
 
 ---
 
 ## 🛠️ Technology Stack
 
-- **Markup & Structure**: HTML5 (Semantic elements, modern attributes)
-- **Styles & Layout**: Vanilla CSS3 (Custom properties, CSS Grids, Flexbox, Keyframes)
-- **Logic & Interactions**: JavaScript ES6+ (Async/Await, Geolocation API, LocalStorage, Nominatim search debouncing)
-- **Icons**: [Lucide Icons Library](https://lucide.dev/)
-- **Hosting / Deploy**: Vercel
+- **Frontend**: React.js (Vite, State Hooks, Lucide Icons, inline SVGs)
+- **Backend**: Node.js, Express.js (`dotenv`, `cors`, `node-cache`)
+- **Hosting / Deployment**: Vercel (monorepo serverless functions configuration)
 
 ---
 
 ## 📁 Project Structure
 
 ```bash
-PRODIGY_WD_05/
-├── index.html       # Application layout & UI overlays
-├── style.css        # Dashboard styling, animation keyframes, & media queries
-├── app.js           # API fetching, particle loops, toggling state, & search debouncing
-└── README.md        # Project documentation
+Weather Forecast/
+├── api/
+│   ├── index.js          # Express app (Serverless-ready API Proxy)
+│   └── cache.js          # In-memory caching utility (node-cache wrapper)
+├── src/
+│   ├── App.jsx           # Main React component
+│   ├── index.css         # Glassmorphic layout & animation system
+│   ├── main.jsx          # React entrypoint
+├── public/               # Static assets
+├── vercel.json           # Vercel deployment routes & overrides
+├── vite.config.js        # Vite + local proxy configurations
+├── .env                  # Local environment configuration
+└── README.md             # Project documentation
 ```
 
 ---
 
 ## 🚀 Running Locally
 
-To run the application locally with full Geolocation support:
+To run the application locally:
 
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/MuthyalaVaraprasad/PRODIGY_WD_05.git
-   cd PRODIGY_WD_05
+1. **Configure Environment Variables**:
+   Duplicate `.env.example` as `.env` and insert your OpenWeatherMap API credentials:
+   ```env
+   PORT=5000
+   OPENWEATHER_API_KEY=your_openweathermap_api_key
    ```
 
-2. **Start a local server**:
-   - **Python**:
-     ```bash
-     python -m http.server 8080
-     ```
-   - **Node.js (NPM)**:
-     ```bash
-     npx http-server -p 8080
-     ```
+2. **Install Dependencies**:
+   ```bash
+   npm install
+   ```
 
-3. **View in browser**:
-   Navigate to `http://localhost:8080` in your web browser.
+3. **Start Development Servers**:
+   Run the following command to boot both the Express server (port 5000) and the Vite frontend (port 5173) concurrently:
+   ```bash
+   npm run dev
+   ```
 
----
-
-## 🧑‍💻 Designed By
-
-Designed & developed by **Muthyala Varaprasad**.
-Licensed under the MIT License.
+4. **View in Browser**:
+   Open `http://localhost:5173` in your web browser.

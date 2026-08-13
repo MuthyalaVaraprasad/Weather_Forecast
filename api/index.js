@@ -19,7 +19,7 @@ if (isDemoMode) {
   console.warn("⚠️ WARNING: OPENWEATHER_API_KEY is not configured in .env. Operating in demo mode with fallback weather data.");
 }
 
-// Map OpenWeatherMap Condition ID to WMO (Open-Meteo) weather codes
+// Map OpenWeatherMap Condition ID to standard WMO weather codes
 function mapOwmIdToWmoCode(id) {
   if (id === 800) return 0; // Clear
   if (id === 801) return 1; // Mainly Clear
