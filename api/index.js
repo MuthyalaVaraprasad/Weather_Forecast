@@ -140,6 +140,8 @@ app.get('/api/weather', async (req, res) => {
     // Set custom coordinates & dates
     const cityName = await reverseGeocode(lat, lon);
     mockData.cityName = `${cityName} (Demo)`;
+    mockData.latitude = lat;
+    mockData.longitude = lon;
     
     // Slight noise to make values feel live
     const noise = (Math.random() - 0.5) * 4;
@@ -259,6 +261,8 @@ app.get('/api/weather', async (req, res) => {
     // Combined Adapted Response
     const responsePayload = {
       cityName,
+      latitude: lat,
+      longitude: lon,
       current: formattedCurrent,
       hourly: formattedHourly,
       daily: formattedDaily

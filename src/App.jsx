@@ -347,6 +347,8 @@ export default function App() {
   const current = weatherData?.current;
   const daily = weatherData?.daily;
   const hourly = weatherData?.hourly;
+  const activeLat = weatherData?.latitude || (localStorage.getItem('cached_weather_city') ? JSON.parse(localStorage.getItem('cached_weather_city')).lat : 51.5074);
+  const activeLon = weatherData?.longitude || (localStorage.getItem('cached_weather_city') ? JSON.parse(localStorage.getItem('cached_weather_city')).lon : -0.1278);
 
   const currentIcon = current ? (current.is_day ? (WEATHER_CODES[current.weather_code]?.icon || 'sun') : (WEATHER_CODES[current.weather_code]?.iconNight || WEATHER_CODES[current.weather_code]?.icon || 'moon')) : 'sun';
   const currentCodeLabel = current ? (WEATHER_CODES[current.weather_code]?.label || 'Cloudy') : 'Cloudy';
@@ -547,7 +549,7 @@ export default function App() {
                 <div className="map-wrapper">
                   <iframe 
                     id="windy-map" 
-                    src={`https://embed.windy.com/embed2.html?lat=${weatherData.latitude || localStorage.getItem('cached_weather_city') ? JSON.parse(localStorage.getItem('cached_weather_city')).lat : 51.5074}&lon=${weatherData.longitude || localStorage.getItem('cached_weather_city') ? JSON.parse(localStorage.getItem('cached_weather_city')).lon : -0.1278}&zoom=6&level=surface&overlay=wind&menu=&message=&marker=&calendar=&pressure=&type=map&location=coordinates&detail=&detailLat=${weatherData.latitude}&detailLon=${weatherData.longitude}&metricWind=km%2Fh&metricTemp=%C2%B0C&radarRange=-1`}
+                    src={`https://embed.windy.com/embed2.html?lat=${activeLat}&lon=${activeLon}&zoom=6&level=surface&overlay=wind&menu=&message=&marker=&calendar=&pressure=&type=map&location=coordinates&detail=&detailLat=${activeLat}&detailLon=${activeLon}&metricWind=km%2Fh&metricTemp=%C2%B0C&radarRange=-1`}
                     frameBorder="0"
                     title="Interactive Windy Weather Map"
                     loading="lazy"
