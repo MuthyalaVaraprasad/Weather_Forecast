@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   SunDim, MapPin, Clock, Calendar, Map as MapIcon, 
   Wind, Thermometer, Droplets, Gauge, AlertCircle, RefreshCw 
@@ -44,6 +44,28 @@ export default function Dashboard({
 
   const activeLat = weatherData.latitude || 51.5074;
   const activeLon = weatherData.longitude || -0.1278;
+
+  // Map state hooks for loading and error UI
+  const [mapError, setMapError] = useState(false);
+  const [mapLoading, setMapLoading] = useState(true);
+
+  useEffect(() => {
+    setMapLoading(true);
+    setMapError(false);
+
+    if (!navigator.onLine) {
+      setMapError(true);
+      setMapLoading(false);
+      return;
+    }
+
+    // Backup loader timeout - if iframe blocks loading for 8s, trigger fallback UI
+    const timer = setTimeout(() => {
+      setMapLoading(false);
+    }, 8000);
+
+    return () => clearTimeout(timer);
+  }, [activeLat, activeLon]);
 
   // UV evaluation
   const uvVal = daily ? daily.uv_index_max[0] : 0;
@@ -295,12 +317,70 @@ export default function Dashboard({
               <MapIcon />
               <span>Wind Radar Map</span>
             </h2>
-            <div className="map-wrapper">
-              <iframe 
-                id="windy-map"
-                title="Windy Weather Radar Map"
-                src={`https://embed.windy.com/embed2.html?lat=${activeLat}&lon=${activeLon}&zoom=5&level=surface&overlay=wind&menu=&message=&marker=&calendar=&pressure=&type=map&location=coordinates&detail=&detailLat=${activeLat}&detailLon=${activeLon}&metricWind=km%2Fh&metricTemp=%C2%B0C&radarRange=-1`}
-              />
+            <div className="map-wrapper" style={{ position: 'relative' }}>
+              {mapError ? (
+                <div className="map-fallback-ui" style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  height: '100%',
+                  gap: '12px',
+                  color: 'var(--text-subtle)',
+                  padding: '2rem',
+                  textAlign: 'center'
+                }}>
+                  <AlertCircle style={{ width: 40, height: 40, color: 'var(--accent-red)' }} />
+                  <p style={{ fontSize: '0.9rem', fontWeight: 600 }}>Wind radar is temporarily unavailable.</p>
+                  <button 
+                    onClick={() => {
+                      setMapError(false);
+                      setMapLoading(true);
+                    }}
+                    className="favorite-chip"
+                    style={{
+                      padding: '0.4rem 0.8rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                      background: 'rgba(255,255,255,0.05)',
+                      color: 'white',
+                      cursor: 'pointer',
+                      borderRadius: '8px'
+                    }}
+                  >
+                    <RefreshCw style={{ width: 12, height: 12 }} /> Retry Load
+                  </button>
+                </div>
+              ) : (
+                <>
+                  {mapLoading && (
+                    <div className="map-loader" style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: '#0f172a',
+                      borderRadius: '16px',
+                      zIndex: 10
+                    }}>
+                      <RefreshCw className="loader-spinner" style={{ width: 24, height: 24, color: 'var(--accent-blue)', animation: 'spin 1.5s linear infinite' }} />
+                    </div>
+                  )}
+                  <iframe 
+                    id="windy-map"
+                    title="Windy Weather Radar Map"
+                    src={`https://embed.windy.com/embed2.html?lat=${activeLat}&lon=${activeLon}&zoom=5&level=surface&overlay=wind&menu=&message=&marker=&calendar=now&pressure=&type=map&location=coordinates&detail=&detailLat=${activeLat}&detailLon=${activeLon}&metricWind=default&metricTemp=default&radarRange=-1`}
+                    onLoad={() => setMapLoading(false)}
+                    onError={() => setMapError(true)}
+                  />
+                </>
+              )}
             </div>
           </section>
 
