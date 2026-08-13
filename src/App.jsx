@@ -187,6 +187,26 @@ export default function App() {
 
   const isCurrentFavorite = weatherData ? favorites.some(f => f.name === weatherData.cityName) : false;
 
+  // Search history state
+  const [searchHistory, setSearchHistory] = useState(() => {
+    try {
+      const saved = localStorage.getItem('weather_search_history');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
+  const addToHistory = (name, lat, lon) => {
+    if (!name || name.includes('Demo') || name.includes('undefined')) return;
+    setSearchHistory(prev => {
+      const filtered = prev.filter(item => item.name.toLowerCase() !== name.toLowerCase());
+      const updated = [{ name, lat, lon }, ...filtered].slice(0, 5);
+      localStorage.setItem('weather_search_history', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
   // Search States
   const [searchTerm, setSearchTerm] = useState('');
   const [suggestions, setSuggestions] = useState([]);
@@ -234,6 +254,9 @@ export default function App() {
         lon,
         name: cityName || data.cityName
       }));
+
+      // Add to search history
+      addToHistory(cityName || data.cityName, lat, lon);
     } catch (e) {
       console.error(e);
       showError("Connection failed. Operating in fallback mode.");
@@ -548,22 +571,44 @@ export default function App() {
             </div>
           </header>
 
-          {/* Starred Locations Quick Bar */}
-          {favorites.length > 0 && (
-            <div className="favorites-bar">
-              <span className="favorites-title">Starred:</span>
-              <div className="favorites-list">
-                {favorites.map((city, idx) => (
-                  <button 
-                    key={idx} 
-                    className="favorite-chip"
-                    onClick={() => fetchWeather(city.lat, city.lon, city.name)}
-                  >
-                    <MapPin style={{ width: 11, height: 11, marginRight: 4, color: 'var(--accent-blue)' }} />
-                    {city.name.split(',')[0]}
-                  </button>
-                ))}
-              </div>
+          {/* Starred & Recent Locations Bar */}
+          {(favorites.length > 0 || searchHistory.length > 0) && (
+            <div className="favorites-bar-container" style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', width: '100%', marginTop: '0.25rem' }}>
+              {favorites.length > 0 && (
+                <div className="favorites-bar" style={{ margin: 0 }}>
+                  <span className="favorites-title">Starred:</span>
+                  <div className="favorites-list">
+                    {favorites.map((city, idx) => (
+                      <button 
+                        key={idx} 
+                        className="favorite-chip"
+                        onClick={() => fetchWeather(city.lat, city.lon, city.name)}
+                      >
+                        <MapPin style={{ width: 11, height: 11, marginRight: 4, color: 'var(--accent-yellow)' }} />
+                        {city.name.split(',')[0]}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {searchHistory.length > 0 && (
+                <div className="favorites-bar" style={{ margin: 0 }}>
+                  <span className="favorites-title">Recent:</span>
+                  <div className="favorites-list">
+                    {searchHistory.map((city, idx) => (
+                      <button 
+                        key={idx} 
+                        className="favorite-chip"
+                        onClick={() => fetchWeather(city.lat, city.lon, city.name)}
+                      >
+                        <Clock style={{ width: 11, height: 11, marginRight: 4, color: 'var(--accent-blue)' }} />
+                        {city.name.split(',')[0]}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -599,8 +644,13 @@ export default function App() {
                   </button>
                 </div>
                 <div className="date">
-                  {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
                 </div>
+                {weatherData.fetchedAt && (
+                  <div className="last-updated" style={{ fontSize: '0.78rem', color: 'var(--text-subtle)', marginTop: '-1.35rem', marginBottom: '1.25rem', opacity: 0.85 }}>
+                    Last updated at: {weatherData.fetchedAt}
+                  </div>
+                )}
                 <div className="weather-hero">
                   <WeatherIcon name={currentIcon} className="weather-hero-icon" />
                   <div className="current-temp-container">

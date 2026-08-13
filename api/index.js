@@ -142,6 +142,7 @@ app.get('/api/weather', async (req, res) => {
     mockData.cityName = `${cityName} (Demo)`;
     mockData.latitude = lat;
     mockData.longitude = lon;
+    mockData.fetchedAt = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     
     // Set custom simulated AQI
     const mockAqiIndex = Math.floor(Math.random() * 3) + 1; // 1 to 3
@@ -305,7 +306,8 @@ app.get('/api/weather', async (req, res) => {
         label: aqiLabel,
         pm25,
         pm10
-      }
+      },
+      fetchedAt: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
     };
 
     setCache(cacheKey, responsePayload, 600); // Cache weather payload for 10 mins
