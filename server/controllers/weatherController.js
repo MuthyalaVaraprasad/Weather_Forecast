@@ -61,14 +61,15 @@ export const getSearch = async (req, res, next) => {
  * Feeds query coordinates to adapters and manages cache hits.
  */
 export const getWeather = async (req, res, next) => {
-  const { lat, lon } = req.query;
+  const { lat, lon, city } = req.query;
   
-  if (!lat || !lon) {
+  if (!city && (!lat || !lon)) {
     res.status(400);
-    return next(new Error("Latitude and longitude query parameters are required."));
+    return next(new Error("Missing city name or coordinate parameters."));
   }
 
-  const cacheKey = `weather:${lat}:${lon}`;
+  // Construct cache key based on query type
+  const cacheKey = city ? `weather:city:${city.toLowerCase()}` : `weather:${lat}:${lon}`;
   const cachedData = cache.get(cacheKey);
   if (cachedData) {
     return res.json(cachedData);
@@ -76,10 +77,30 @@ export const getWeather = async (req, res, next) => {
 
   try {
     let payload;
-    if (isDemoMode) {
-      payload = await weatherService.getMockWeatherData(lat, lon);
+    if (city) {
+      // 1. Resolve coordinates first
+      let resolved;
+      if (isDemoMode) {
+        resolved = weatherService.getMockCoordsByCityName(city);
+      } else {
+        resolved = await weatherService.getCoordsByCityName(city, API_KEY);
+      }
+      
+      // 2. Fetch using coordinates
+      if (isDemoMode) {
+        payload = await weatherService.getMockWeatherData(resolved.lat, resolved.lon);
+        payload.cityName = resolved.name;
+      } else {
+        payload = await weatherService.fetchWeatherData(resolved.lat, resolved.lon, API_KEY);
+        payload.cityName = resolved.name;
+      }
     } else {
-      payload = await weatherService.fetchWeatherData(lat, lon, API_KEY);
+      // Direct coordinate lookup
+      if (isDemoMode) {
+        payload = await weatherService.getMockWeatherData(lat, lon);
+      } else {
+        payload = await weatherService.fetchWeatherData(lat, lon, API_KEY);
+      }
     }
 
     // Cache weather payload for 10 minutes (600 seconds)

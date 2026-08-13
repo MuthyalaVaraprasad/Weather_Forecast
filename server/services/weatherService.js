@@ -51,19 +51,73 @@ export const reverseGeocode = async (lat, lon) => {
   return "My Location";
 };
 
+// Resolve city name query to lat/lon coordinates
+export const getCoordsByCityName = async (city, apiKey) => {
+  if (!city || city.trim().length === 0) {
+    throw new Error("Missing city parameter.");
+  }
+  const geoUrl = `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(city)}&limit=1&appid=${apiKey}`;
+  try {
+    const response = await axios.get(geoUrl);
+    const data = response.data;
+    if (!data || data.length === 0) {
+      throw new Error("City not found. Please check the city name and try again.");
+    }
+    return {
+      lat: data[0].lat,
+      lon: data[0].lon,
+      name: `${data[0].name}, ${data[0].country}`
+    };
+  } catch (error) {
+    if (error.response) {
+      if (error.response.status === 401) {
+        throw new Error("Invalid API key. Please check your OpenWeatherMap API credentials.");
+      }
+      throw new Error(error.response.data?.message || "Geocoding check failed.");
+    } else if (error.request) {
+      throw new Error("Network failure. OpenWeatherMap geocoder is unreachable.");
+    }
+    throw error;
+  }
+};
+
+// Fallback Mock resolver
+export const getMockCoordsByCityName = (city) => {
+  if (city.toLowerCase() === 'invalid' || city.toLowerCase() === 'error') {
+    throw new Error("City not found. Please check the city name and try again.");
+  }
+  return {
+    lat: 51.5074,
+    lon: -0.1278,
+    name: `${city.charAt(0).toUpperCase() + city.slice(1)} (Demo)`
+  };
+};
+
 // 1. Search locations via OWM Geocoding API
 export const searchLocations = async (query, apiKey) => {
-  const geoUrl = `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(query)}&limit=5&appid=${apiKey}`;
-  const response = await axios.get(geoUrl);
-  const data = response.data;
+  try {
+    const geoUrl = `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(query)}&limit=5&appid=${apiKey}`;
+    const response = await axios.get(geoUrl);
+    const data = response.data;
 
-  return data.map(item => ({
-    name: item.name,
-    latitude: item.lat,
-    longitude: item.lon,
-    admin1: item.state || '',
-    country: item.country
-  }));
+    return data.map(item => ({
+      name: item.name,
+      latitude: item.lat,
+      longitude: item.lon,
+      admin1: item.state || '',
+      country: item.country
+    }));
+  } catch (error) {
+    if (error.response) {
+      if (error.response.status === 401) {
+        throw new Error("Invalid API key. Please check your OpenWeatherMap API credentials.");
+      }
+      throw new Error(error.response.data?.message || "Geocoding query error.");
+    } else if (error.request) {
+      throw new Error("Network failure. Geocoding endpoints are currently unreachable.");
+    }
+    throw error;
+  }
 };
 
 // 2. Fetch all weather data from OWM and structure it
@@ -74,16 +128,41 @@ export const fetchWeatherData = async (lat, lon, apiKey) => {
   const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
   const pollutionUrl = `https://api.openweathermap.org/data/2.5/air_pollution?lat=${lat}&lon=${lon}&appid=${apiKey}`;
 
-  // Async parallel requests using axios
-  const [currentRes, forecastRes, pollutionRes] = await Promise.all([
-    axios.get(currentUrl),
-    axios.get(forecastUrl),
-    axios.get(pollutionUrl)
-  ]);
+  let currentRes, forecastRes, pollutionRes;
+  try {
+    // Async parallel requests using axios
+    [currentRes, forecastRes, pollutionRes] = await Promise.all([
+      axios.get(currentUrl),
+      axios.get(forecastUrl),
+      axios.get(pollutionUrl)
+    ]);
+  } catch (error) {
+    if (error.response) {
+      const status = error.response.status;
+      if (status === 401) {
+        throw new Error("Invalid API key. Please check your OpenWeatherMap API credentials.");
+      } else if (status === 404) {
+        throw new Error("City not found. Please check the coordinates and try again.");
+      } else if (status === 429) {
+        throw new Error("OpenWeatherMap API rate limit exceeded. Please try again later.");
+      } else {
+        throw new Error(`OpenWeatherMap API error: ${error.response.data?.message || "Request failed"}`);
+      }
+    } else if (error.request) {
+      throw new Error("API unavailable. OpenWeatherMap servers are currently unreachable.");
+    } else {
+      throw new Error(error.message || "Unexpected response during weather fetch.");
+    }
+  }
 
   const currentData = currentRes.data;
   const forecastData = forecastRes.data;
   const pollutionData = pollutionRes.data;
+
+  // Validate response data structures
+  if (!currentData || !currentData.main || !forecastData || !forecastData.list) {
+    throw new Error("Unexpected response: Weather data is missing or incomplete.");
+  }
 
   // Map Current Conditions
   const currentCode = currentData.weather[0] ? currentData.weather[0].id : 800;

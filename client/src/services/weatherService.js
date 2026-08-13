@@ -3,6 +3,20 @@
  */
 
 /**
+ * Fetch detailed weather using city name queries.
+ * @param {string} city - Name of target city.
+ * @returns {Promise<object>} Adapted weather dashboard payload.
+ */
+export const fetchWeatherByCity = async (city) => {
+  const response = await fetch(`/api/weather?city=${encodeURIComponent(city)}`);
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || "City not found. Please check the city name and try again.");
+  }
+  return response.json();
+};
+
+/**
  * Fetch detailed weather, forecast, and air pollution metrics for a coordinate set.
  * @param {number} lat - Latitude
  * @param {number} lon - Longitude
@@ -11,7 +25,8 @@
 export const fetchWeather = async (lat, lon) => {
   const response = await fetch(`/api/weather?lat=${lat}&lon=${lon}`);
   if (!response.ok) {
-    throw new Error("Could not download atmospheric data.");
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || "Could not download atmospheric data.");
   }
   return response.json();
 };
@@ -24,7 +39,8 @@ export const fetchWeather = async (lat, lon) => {
 export const searchLocations = async (query) => {
   const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
   if (!response.ok) {
-    throw new Error("Failed to query location suggestions.");
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || "Failed to query location suggestions.");
   }
   return response.json();
 };

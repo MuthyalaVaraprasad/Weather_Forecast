@@ -97,7 +97,42 @@ export default function App() {
     } catch (e) {
       console.error("Fetch weather details error:", e);
       setHasError(true);
-      showError("Connection Error: Unable to fetch weather data. Please try again.");
+      showError(e.message || "Connection Error: Unable to fetch weather data. Please try again.");
+      if (!weatherData) setShowPrompt(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchWeatherByCity = async (city) => {
+    if (!navigator.onLine) {
+      showError("Offline Mode: Unable to connect to server. Displaying cached weather.");
+      return;
+    }
+
+    setLoading(true);
+    setShowPrompt(false);
+
+    try {
+      const data = await apiService.fetchWeatherByCity(city);
+      setWeatherData(data);
+      setHasError(false);
+
+      lastCoords.current = { lat: data.latitude, lon: data.longitude };
+
+      // Cache search coordinates locally
+      localStorage.setItem('cached_weather_city', JSON.stringify({
+        lat: data.latitude,
+        lon: data.longitude,
+        name: data.cityName
+      }));
+
+      // Append successfully resolved query to history
+      addToHistory(data.cityName, data.latitude, data.longitude);
+    } catch (e) {
+      console.error("Fetch weather by city error:", e);
+      setHasError(true);
+      showError(e.message || "City not found. Please check the city name and try again.");
       if (!weatherData) setShowPrompt(true);
     } finally {
       setLoading(false);
@@ -293,7 +328,7 @@ export default function App() {
       {showPrompt && !loading && (
         <FallbackPrompt 
           popularCities={POPULAR_CITIES}
-          fetchWeather={fetchWeather}
+          fetchWeather={fetchWeatherByCity}
           modalSearchTerm={modalSearchTerm}
           handleModalSearchChange={handleModalSearchChange}
           isModalSuggestionsActive={isModalSuggestionsActive}
@@ -324,7 +359,7 @@ export default function App() {
           setIsSuggestionsActive={setIsSuggestionsActive}
           searchContainerRef={searchContainerRef}
           getUserLocation={getUserLocation}
-          fetchWeather={fetchWeather}
+          fetchWeather={fetchWeatherByCity}
           hasError={hasError}
           lastCoords={lastCoords}
           toFahrenheit={toFahrenheit}
