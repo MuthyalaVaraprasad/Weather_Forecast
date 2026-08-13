@@ -103,8 +103,20 @@ export const getWeather = async (req, res, next) => {
       }
     }
 
-    // Cache weather payload for 10 minutes (600 seconds)
-    cache.set(cacheKey, payload, 600);
+    /**
+     * Cache Strategy Explanation:
+     * 
+     * 1. Server-Side Performance Cache:
+     *    Implemented here using `node-cache` in Express with a 5-minute (300s) TTL.
+     *    Reduces downstream latency, mitigates rate limits, and prevents redundant 
+     *    expensive requests to the OpenWeatherMap API for identical city searches.
+     * 
+     * 2. Client-Side Fallback/Offline Cache:
+     *    Stored in the React client's browser `localStorage` on successful fetches.
+     *    Acts as a fail-safe backup during network offline states, backend timeouts, 
+     *    or server crashes.
+     */
+    cache.set(cacheKey, payload, 300);
     res.json(payload);
   } catch (error) {
     // Forward error to Express global handler
