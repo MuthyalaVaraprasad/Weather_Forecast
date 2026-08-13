@@ -541,7 +541,7 @@ header {
     .dashboard-grid {
         flex: 1;
         height: 0; /* force flex basis zero so grid fills remaining height */
-        grid-template-columns: 1fr 1.6fr;
+        grid-template-columns: 1.4fr 1fr;
         gap: 1.5rem;
         overflow: hidden;
     }
