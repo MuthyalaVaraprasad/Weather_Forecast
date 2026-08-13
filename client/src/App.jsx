@@ -20,6 +20,7 @@ const POPULAR_CITIES = [
 export default function App() {
   const [weatherData, setWeatherData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadingText, setLoadingText] = useState("Detecting your location...");
   const [showPrompt, setShowPrompt] = useState(false);
   const [isCelsius, setIsCelsius] = useState(true);
   const [isLightning, setIsLightning] = useState(false);
@@ -76,6 +77,7 @@ export default function App() {
       return;
     }
 
+    setLoadingText(cityName ? `Searching ${cityName.split(',')[0]}...` : "Loading weather details...");
     setLoading(true);
     setShowPrompt(false);
     lastCoords.current = { lat, lon };
@@ -97,7 +99,7 @@ export default function App() {
     } catch (e) {
       console.error("Fetch weather details error:", e);
       setHasError(true);
-      showError(e.message || "Connection Error: Unable to fetch weather data. Please try again.");
+      showError("Weather service is temporarily unavailable. Showing the last available data.");
       if (!weatherData) setShowPrompt(true);
     } finally {
       setLoading(false);
@@ -110,6 +112,7 @@ export default function App() {
       return;
     }
 
+    setLoadingText(`Searching ${city.split(',')[0]}...`);
     setLoading(true);
     setShowPrompt(false);
 
@@ -132,7 +135,7 @@ export default function App() {
     } catch (e) {
       console.error("Fetch weather by city error:", e);
       setHasError(true);
-      showError(e.message || "City not found. Please check the city name and try again.");
+      showError("Weather service is temporarily unavailable. Showing the last available data.");
       if (!weatherData) setShowPrompt(true);
     } finally {
       setLoading(false);
@@ -141,6 +144,7 @@ export default function App() {
 
   // Automatic GPS Geolocation lookup
   const getUserLocation = () => {
+    setLoadingText("Detecting your location...");
     setLoading(true);
     setShowPrompt(false);
 
@@ -318,7 +322,7 @@ export default function App() {
         <div className="loading-overlay">
           <div className="loader-content">
             <SunDim className="loader-spinner" />
-            <h2>Detecting your location...</h2>
+            <h2>{loadingText}</h2>
             <p>Gathering real-time atmospheric data</p>
           </div>
         </div>
