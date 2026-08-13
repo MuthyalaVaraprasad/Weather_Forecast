@@ -28,6 +28,7 @@ export default function App() {
   // Connection & Offline trackers
   const isOffline = useOffline();
   const [hasError, setHasError] = useState(false);
+  const [isFallback, setIsFallback] = useState(false);
   const lastCoords = useRef({ lat: 51.5074, lon: -0.1278 });
 
   // Favorites & Search History Hook
@@ -70,10 +71,52 @@ export default function App() {
     return `${Math.round(val)}°${isCelsius ? 'C' : 'F'}`;
   };
 
+  const getOfflineFallback = (queryCityName) => {
+    try {
+      let targetCity = queryCityName ? queryCityName.toLowerCase() : '';
+      if (!targetCity) {
+        const cachedMeta = localStorage.getItem('cached_weather_city');
+        if (cachedMeta) {
+          targetCity = JSON.parse(cachedMeta).name.toLowerCase();
+        }
+      }
+      if (!targetCity) {
+        targetCity = localStorage.getItem('last_queried_city') || '';
+      }
+      if (targetCity) {
+        let cachedPayload = localStorage.getItem(`weather_cache_${targetCity}`);
+        if (!cachedPayload) {
+          for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key.startsWith('weather_cache_') && key.includes(targetCity.split(',')[0].trim())) {
+              cachedPayload = localStorage.getItem(key);
+              break;
+            }
+          }
+        }
+        if (cachedPayload) {
+          return JSON.parse(cachedPayload);
+        }
+      }
+    } catch (err) {
+      console.error("Error reading offline fallback:", err);
+    }
+    return null;
+  };
+
   // API Call Coordinator
   const fetchWeather = async (lat, lon, cityName = '') => {
     if (!navigator.onLine) {
-      showError("Offline Mode: Unable to connect to server. Displaying cached weather.");
+      setHasError(true);
+      const fallbackData = getOfflineFallback(cityName);
+      if (fallbackData) {
+        setWeatherData(fallbackData);
+        setIsFallback(true);
+        showError("Offline Mode: Showing cached weather.");
+      } else {
+        showError("Offline Mode: No local backup found.");
+        if (!weatherData) setShowPrompt(true);
+      }
       return;
     }
 
@@ -86,6 +129,7 @@ export default function App() {
       const data = await apiService.fetchWeather(lat, lon);
       setWeatherData(data);
       setHasError(false);
+      setIsFallback(false);
 
       // Cache search coordinates locally
       localStorage.setItem('cached_weather_city', JSON.stringify({
@@ -94,13 +138,25 @@ export default function App() {
         name: cityName || data.cityName
       }));
 
+      // Cache full weather payload
+      const normalName = (cityName || data.cityName).toLowerCase();
+      localStorage.setItem(`weather_cache_${normalName}`, JSON.stringify(data));
+      localStorage.setItem('last_queried_city', normalName);
+
       // Append successfully resolved query to history
       addToHistory(cityName || data.cityName, lat, lon);
     } catch (e) {
       console.error("Fetch weather details error:", e);
       setHasError(true);
-      showError("Weather service is temporarily unavailable. Showing the last available data.");
-      if (!weatherData) setShowPrompt(true);
+      const fallbackData = getOfflineFallback(cityName);
+      if (fallbackData) {
+        setWeatherData(fallbackData);
+        setIsFallback(true);
+        showError("Weather service is temporarily unavailable. Showing the last available data.");
+      } else {
+        showError("Weather service is temporarily unavailable. Showing fallback screen.");
+        if (!weatherData) setShowPrompt(true);
+      }
     } finally {
       setLoading(false);
     }
@@ -108,7 +164,16 @@ export default function App() {
 
   const fetchWeatherByCity = async (city) => {
     if (!navigator.onLine) {
-      showError("Offline Mode: Unable to connect to server. Displaying cached weather.");
+      setHasError(true);
+      const fallbackData = getOfflineFallback(city);
+      if (fallbackData) {
+        setWeatherData(fallbackData);
+        setIsFallback(true);
+        showError("Offline Mode: Showing cached weather.");
+      } else {
+        showError("Offline Mode: No local backup found.");
+        if (!weatherData) setShowPrompt(true);
+      }
       return;
     }
 
@@ -120,6 +185,7 @@ export default function App() {
       const data = await apiService.fetchWeatherByCity(city);
       setWeatherData(data);
       setHasError(false);
+      setIsFallback(false);
 
       lastCoords.current = { lat: data.latitude, lon: data.longitude };
 
@@ -130,13 +196,25 @@ export default function App() {
         name: data.cityName
       }));
 
+      // Cache full weather payload
+      const normalName = data.cityName.toLowerCase();
+      localStorage.setItem(`weather_cache_${normalName}`, JSON.stringify(data));
+      localStorage.setItem('last_queried_city', normalName);
+
       // Append successfully resolved query to history
       addToHistory(data.cityName, data.latitude, data.longitude);
     } catch (e) {
       console.error("Fetch weather by city error:", e);
       setHasError(true);
-      showError("Weather service is temporarily unavailable. Showing the last available data.");
-      if (!weatherData) setShowPrompt(true);
+      const fallbackData = getOfflineFallback(city);
+      if (fallbackData) {
+        setWeatherData(fallbackData);
+        setIsFallback(true);
+        showError("Weather service is temporarily unavailable. Showing the last available data.");
+      } else {
+        showError("Weather service is temporarily unavailable. Showing fallback screen.");
+        if (!weatherData) setShowPrompt(true);
+      }
     } finally {
       setLoading(false);
     }
@@ -190,6 +268,18 @@ export default function App() {
       getUserLocation();
     }
   }, []);
+
+  // Automatic connection restoration listener
+  useEffect(() => {
+    const handleOnlineStatus = () => {
+      showError("Connection restored! Refreshing weather data...");
+      if (lastCoords.current) {
+        fetchWeather(lastCoords.current.lat, lastCoords.current.lon);
+      }
+    };
+    window.addEventListener('online', handleOnlineStatus);
+    return () => window.removeEventListener('online', handleOnlineStatus);
+  }, [weatherData]);
 
   // Header Auto-complete Suggestion Debouncer
   useEffect(() => {
@@ -373,6 +463,7 @@ export default function App() {
           getUserLocation={getUserLocation}
           fetchWeather={handleFetchWeather}
           hasError={hasError}
+          isFallback={isFallback}
           lastCoords={lastCoords}
           toFahrenheit={toFahrenheit}
           formatTemp={formatTemp}
