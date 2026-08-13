@@ -299,7 +299,7 @@ export default function Dashboard({
               <iframe 
                 id="windy-map"
                 title="Windy Weather Radar Map"
-                src={`https://node.windy.com/iframe/three/index.html?lat=${activeLat}&lon=${activeLon}&zoom=5&level=surface&overlay=wind&menu=&message=&marker=&calendar=&pressure=&type=map&location=coordinates&detail=&detailLat=${activeLat}&detailLon=${activeLon}&metricWind=km%2Fh&metricTemp=%C2%B0C&radarRange=-1`}
+                src={`https://embed.windy.com/embed2.html?lat=${activeLat}&lon=${activeLon}&zoom=5&level=surface&overlay=wind&menu=&message=&marker=&calendar=&pressure=&type=map&location=coordinates&detail=&detailLat=${activeLat}&detailLon=${activeLon}&metricWind=km%2Fh&metricTemp=%C2%B0C&radarRange=-1`}
               />
             </div>
           </section>
