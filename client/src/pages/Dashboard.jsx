@@ -284,7 +284,7 @@ export default function Dashboard({
             </div>
             {weatherData.fetchedAt && (
               <div className="last-updated" style={{ fontSize: '0.78rem', color: isFallback ? 'var(--accent-yellow)' : 'var(--text-subtle)', marginTop: '-1.35rem', marginBottom: '1.25rem', opacity: 0.95, display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'center', fontWeight: isFallback ? 600 : 400 }}>
-                <span>{isFallback ? `Showing cached fallback data (from: ${weatherData.fetchedAt})` : `Last updated at: ${weatherData.fetchedAt}`}</span>
+                <span>{isFallback ? `Showing cached data (from: ${weatherData.fetchedAt})` : `Last updated at: ${weatherData.fetchedAt}`}</span>
                 {hasError && (
                   <button 
                     onClick={() => fetchWeather({ lat: lastCoords.current.lat, lon: lastCoords.current.lon })}

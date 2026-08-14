@@ -17,7 +17,8 @@ export default function FallbackPrompt({
   hasError,
   lastCoords,
   isModalSuggestionsLoading,
-  modalSuggestionsError
+  modalSuggestionsError,
+  failedQuery
 }) {
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
 
@@ -31,8 +32,13 @@ export default function FallbackPrompt({
         <div className="prompt-icon-wrapper">
           <MapPinOff className="pulse-icon" />
         </div>
-        <h2>Location Access Required</h2>
-        <p>We couldn't automatically detect your location. Please grant location access in your browser or choose a city below to open the dashboard.</p>
+        <h2>{failedQuery ? 'Weather Data Unavailable' : 'Location Access Required'}</h2>
+        <p>
+          {failedQuery 
+            ? `Unable to load weather details for "${typeof failedQuery === 'string' ? failedQuery : failedQuery.name}". Please check your internet connection and try again.`
+            : `We couldn't automatically detect your location. Please grant location access in your browser or choose a city below to open the dashboard.`
+          }
+        </p>
         
         <div className="quick-cities-title">Popular Cities</div>
         <div className="quick-cities-grid">
@@ -147,7 +153,13 @@ export default function FallbackPrompt({
         
         {hasError && (
           <button 
-            onClick={() => fetchWeather({ lat: lastCoords.current.lat, lon: lastCoords.current.lon })}
+            onClick={() => {
+              if (failedQuery) {
+                fetchWeather(failedQuery);
+              } else if (lastCoords && lastCoords.current) {
+                fetchWeather({ lat: lastCoords.current.lat, lon: lastCoords.current.lon });
+              }
+            }}
             style={{
               background: 'rgba(239, 68, 68, 0.15)',
               border: '1px solid var(--accent-red)',
@@ -166,7 +178,7 @@ export default function FallbackPrompt({
               width: '100%'
             }}
           >
-            <RefreshCw style={{ width: 14, height: 14 }} /> Retry Connection
+            <RefreshCw style={{ width: 14, height: 14 }} /> {failedQuery ? 'Retry Search' : 'Retry Connection'}
           </button>
         )}
       </div>

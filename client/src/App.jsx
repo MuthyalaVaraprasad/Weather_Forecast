@@ -59,6 +59,7 @@ export default function App() {
   const [isModalSuggestionsActive, setIsModalSuggestionsActive] = useState(false);
   const [isModalSuggestionsLoading, setIsModalSuggestionsLoading] = useState(false);
   const [modalSuggestionsError, setModalSuggestionsError] = useState(null);
+  const [failedQuery, setFailedQuery] = useState(null);
   const modalSearchContainerRef = useRef(null);
 
   // Error Toast States
@@ -120,6 +121,7 @@ export default function App() {
     }
     const controller = new AbortController();
     weatherAbortRef.current = controller;
+    setFailedQuery(null);
 
     if (!navigator.onLine) {
       setHasError(true);
@@ -127,10 +129,12 @@ export default function App() {
       if (fallbackData) {
         setWeatherData(fallbackData);
         setIsFallback(true);
+        setFailedQuery(null);
         showError("Offline Mode: Showing cached weather.");
       } else {
         setWeatherData(null);
         setShowPrompt(true);
+        setFailedQuery(cityName || { lat, lon, name: "Selected Location" });
         showError("Offline Mode: No local backup found.");
       }
       return;
@@ -146,6 +150,7 @@ export default function App() {
       setWeatherData(data);
       setHasError(false);
       setIsFallback(false);
+      setFailedQuery(null);
 
       // Cache search coordinates locally
       localStorage.setItem('cached_weather_city', JSON.stringify({
@@ -169,10 +174,12 @@ export default function App() {
       if (fallbackData) {
         setWeatherData(fallbackData);
         setIsFallback(true);
+        setFailedQuery(null);
         showError(`Weather service is temporarily unavailable. Showing cached data for ${fallbackData.cityName}.`);
       } else {
         setWeatherData(null);
         setShowPrompt(true);
+        setFailedQuery(cityName || { lat, lon, name: "Selected Location" });
         showError(e.message || `${cityName || "Selected location"} weather is currently unavailable.`);
       }
     } finally {
@@ -188,6 +195,7 @@ export default function App() {
     }
     const controller = new AbortController();
     weatherAbortRef.current = controller;
+    setFailedQuery(null);
 
     if (!navigator.onLine) {
       setHasError(true);
@@ -195,10 +203,12 @@ export default function App() {
       if (fallbackData) {
         setWeatherData(fallbackData);
         setIsFallback(true);
+        setFailedQuery(null);
         showError("Offline Mode: Showing cached weather.");
       } else {
         setWeatherData(null);
         setShowPrompt(true);
+        setFailedQuery(city);
         showError("Offline Mode: No local backup found.");
       }
       return;
@@ -213,6 +223,7 @@ export default function App() {
       setWeatherData(data);
       setHasError(false);
       setIsFallback(false);
+      setFailedQuery(null);
 
       lastCoords.current = { lat: data.latitude, lon: data.longitude };
 
@@ -238,10 +249,12 @@ export default function App() {
       if (fallbackData) {
         setWeatherData(fallbackData);
         setIsFallback(true);
+        setFailedQuery(null);
         showError(`Weather service is temporarily unavailable. Showing cached data for ${fallbackData.cityName}.`);
       } else {
         setWeatherData(null);
         setShowPrompt(true);
+        setFailedQuery(city);
         showError(e.message || `${city} weather is currently unavailable.`);
       }
     } finally {
@@ -519,6 +532,7 @@ export default function App() {
           lastCoords={lastCoords}
           isModalSuggestionsLoading={isModalSuggestionsLoading}
           modalSuggestionsError={modalSuggestionsError}
+          failedQuery={failedQuery}
         />
       )}
 
