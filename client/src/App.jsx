@@ -146,7 +146,7 @@ export default function App() {
     lastCoords.current = { lat, lon };
 
     try {
-      const data = await apiService.fetchWeather(lat, lon, controller.signal);
+      const data = await apiService.fetchWeather(lat, lon, cityName, controller.signal);
       setWeatherData(data);
       setHasError(false);
       setIsFallback(false);

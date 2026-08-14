@@ -35,9 +35,16 @@ export const fetchWeatherByCity = async (city, signal) => {
  * @param {AbortSignal} [signal] - Optional AbortSignal for canceling the request.
  * @returns {Promise<object>} Adapted weather dashboard payload.
  */
-export const fetchWeather = async (lat, lon, signal) => {
+export const fetchWeather = async (lat, lon, cityName, signal) => {
   try {
-    const response = await fetch(`/api/weather?lat=${lat}&lon=${lon}`, { signal });
+    let actualCityName = cityName;
+    let actualSignal = signal;
+    if (cityName && typeof cityName !== 'string') {
+      actualSignal = cityName;
+      actualCityName = '';
+    }
+    const cityParam = actualCityName ? `&city=${encodeURIComponent(actualCityName)}` : '';
+    const response = await fetch(`/api/weather?lat=${lat}&lon=${lon}${cityParam}`, { signal: actualSignal });
     if (!response.ok) {
       if (response.status === 401) throw new Error("Weather service authentication failed.");
       if (response.status === 404) throw new Error("Location not found.");

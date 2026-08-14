@@ -146,8 +146,8 @@ export const searchLocations = async (query, apiKey) => {
 };
 
 // 2. Fetch all weather data from OWM and structure it
-export const fetchWeatherData = async (lat, lon, apiKey) => {
-  const cityName = await reverseGeocode(lat, lon);
+export const fetchWeatherData = async (lat, lon, apiKey, overrideCityName = '') => {
+  const cityName = overrideCityName || await reverseGeocode(lat, lon);
 
   const currentUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
   const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
@@ -310,13 +310,13 @@ export const fetchWeatherData = async (lat, lon, apiKey) => {
 };
 
 // High-fidelity Mock payload for Keyless Demo Mode
-export const getMockWeatherData = async (lat, lon) => {
-  const cityName = await reverseGeocode(lat, lon);
+export const getMockWeatherData = async (lat, lon, overrideCityName = '') => {
+  const cityName = overrideCityName || await reverseGeocode(lat, lon);
   const mockAqiIndex = Math.floor(Math.random() * 3) + 1; // 1 to 3
   const aqiLabels = { 1: "Good", 2: "Fair", 3: "Moderate" };
 
   return {
-    cityName: `${cityName} (Demo)`,
+    cityName: cityName.endsWith(' (Demo)') ? cityName : `${cityName} (Demo)`,
     latitude: lat,
     longitude: lon,
     current: {

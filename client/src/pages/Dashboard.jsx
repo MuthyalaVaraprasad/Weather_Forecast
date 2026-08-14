@@ -287,7 +287,7 @@ export default function Dashboard({
                 <span>{isFallback ? `Showing cached data (from: ${weatherData.fetchedAt})` : `Last updated at: ${weatherData.fetchedAt}`}</span>
                 {hasError && (
                   <button 
-                    onClick={() => fetchWeather({ lat: lastCoords.current.lat, lon: lastCoords.current.lon })}
+                    onClick={() => fetchWeather({ lat: lastCoords.current.lat, lon: lastCoords.current.lon, name: weatherData.cityName })}
                     style={{
                       background: 'rgba(239, 68, 68, 0.25)',
                       border: '1px solid var(--accent-red)',

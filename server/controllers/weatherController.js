@@ -93,12 +93,22 @@ export const getWeather = async (req, res, next) => {
   }
 
   const { lat, lon, city } = req.query;
+  const hasCoordinates = lat && lon;
   
-  if (!city && (!lat || !lon)) {
+  if (!city && !hasCoordinates) {
     res.status(400);
     return next(new Error("Missing city name or coordinate parameters."));
   }
 
+  // Validate inputs
+  if (hasCoordinates) {
+    const latitude = parseFloat(lat);
+    const longitude = parseFloat(lon);
+    if (isNaN(latitude) || latitude < -90 || latitude > 90 || isNaN(longitude) || longitude < -180 || longitude > 180) {
+      res.status(400);
+      return next(new Error("Invalid coordinates provided."));
+    }
+  }
   if (city) {
     if (city.length > 80) {
       res.status(400);
@@ -109,17 +119,13 @@ export const getWeather = async (req, res, next) => {
       res.status(400);
       return next(new Error("City name contains invalid characters."));
     }
-  } else {
-    const latitude = parseFloat(lat);
-    const longitude = parseFloat(lon);
-    if (isNaN(latitude) || latitude < -90 || latitude > 90 || isNaN(longitude) || longitude < -180 || longitude > 180) {
-      res.status(400);
-      return next(new Error("Invalid coordinates provided."));
-    }
   }
 
-  // Construct cache key based on query type
-  const cacheKey = city ? `weather:city:${city.toLowerCase().trim()}` : `weather:${lat}:${lon}`;
+  // Construct cache key prioritizing coordinates for high accuracy
+  const cacheKey = hasCoordinates 
+    ? `weather:${parseFloat(lat).toFixed(4)}:${parseFloat(lon).toFixed(4)}`
+    : `weather:city:${city.toLowerCase().trim()}`;
+
   const cachedData = cache.get(cacheKey);
   if (cachedData) {
     return res.json(cachedData);
@@ -127,8 +133,15 @@ export const getWeather = async (req, res, next) => {
 
   try {
     let payload;
-    if (city) {
-      // 1. Resolve coordinates first
+    if (hasCoordinates) {
+      // Prioritize direct coordinate lookup to prevent redundant geocoding APIs
+      if (isDemoMode) {
+        payload = await weatherService.getMockWeatherData(parseFloat(lat), parseFloat(lon), city);
+      } else {
+        payload = await weatherService.fetchWeatherData(parseFloat(lat), parseFloat(lon), API_KEY, city);
+      }
+    } else {
+      // 1. Resolve coordinates from city name
       let resolved;
       if (isDemoMode) {
         resolved = weatherService.getMockCoordsByCityName(city);
@@ -136,20 +149,11 @@ export const getWeather = async (req, res, next) => {
         resolved = await weatherService.getCoordsByCityName(city, API_KEY);
       }
       
-      // 2. Fetch using coordinates
+      // 2. Fetch using resolved coordinates
       if (isDemoMode) {
-        payload = await weatherService.getMockWeatherData(resolved.lat, resolved.lon);
-        payload.cityName = resolved.name;
+        payload = await weatherService.getMockWeatherData(resolved.lat, resolved.lon, resolved.name);
       } else {
-        payload = await weatherService.fetchWeatherData(resolved.lat, resolved.lon, API_KEY);
-        payload.cityName = resolved.name;
-      }
-    } else {
-      // Direct coordinate lookup
-      if (isDemoMode) {
-        payload = await weatherService.getMockWeatherData(lat, lon);
-      } else {
-        payload = await weatherService.fetchWeatherData(lat, lon, API_KEY);
+        payload = await weatherService.fetchWeatherData(resolved.lat, resolved.lon, API_KEY, resolved.name);
       }
     }
 
