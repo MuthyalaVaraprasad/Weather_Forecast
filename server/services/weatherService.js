@@ -24,13 +24,6 @@ function mapOwmIdToWmoCode(id) {
   return 3; // Default Overcast
 }
 
-// Estimate UV Index based on weather code
-function estimateUvIndex(code) {
-  if ([0].includes(code)) return (5.5 + Math.random() * 2);
-  if ([1, 2].includes(code)) return (3.5 + Math.random() * 1.5);
-  if ([3, 45].includes(code)) return (1.5 + Math.random() * 1.0);
-  return (0.5 + Math.random() * 0.5);
-}
 
 // Helper to reverse geocode coordinate to city name using OSM Nominatim
 export const reverseGeocode = async (lat, lon) => {
@@ -257,7 +250,6 @@ export const fetchWeatherData = async (lat, lon, apiKey) => {
   const dailyMin = [];
   const dailyCodes = [];
   const dailyPops = [];
-  const dailyUv = [];
 
   // Group stats calculations
   Object.keys(dailyGroups).slice(0, 7).forEach(dateStr => {
@@ -276,7 +268,6 @@ export const fetchWeatherData = async (lat, lon, apiKey) => {
     dailyMax.push(maxTemp);
     dailyCodes.push(wmoDailyCode);
     dailyPops.push(Math.round(maxPop));
-    dailyUv.push(estimateUvIndex(wmoDailyCode));
   });
 
   const formattedDaily = {
@@ -284,8 +275,7 @@ export const fetchWeatherData = async (lat, lon, apiKey) => {
     weather_code: dailyCodes,
     temperature_2m_max: dailyMax,
     temperature_2m_min: dailyMin,
-    precipitation_probability_max: dailyPops,
-    uv_index_max: dailyUv
+    precipitation_probability_max: dailyPops
   };
 
   // Parse AQI
@@ -351,8 +341,7 @@ export const getMockWeatherData = async (lat, lon) => {
       weather_code: [2, 3, 61, 95, 0, 2],
       temperature_2m_max: [19.0, 17.5, 15.2, 16.8, 21.0, 20.2],
       temperature_2m_min: [13.0, 12.2, 11.0, 10.5, 12.0, 13.5],
-      precipitation_probability_max: [20, 30, 80, 90, 5, 15],
-      uv_index_max: [4.2, 2.5, 1.1, 0.8, 7.2, 5.0]
+      precipitation_probability_max: [20, 30, 80, 90, 5, 15]
     },
     aqi: {
       index: mockAqiIndex,

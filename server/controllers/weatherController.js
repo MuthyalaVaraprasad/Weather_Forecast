@@ -1,8 +1,8 @@
 import NodeCache from 'node-cache';
 import * as weatherService from '../services/weatherService.js';
 
-// Setup Cache (stdTTL is 5 minutes (300s))
-const cache = new NodeCache({ stdTTL: 300, checkperiod: 60 });
+// Setup Cache (stdTTL is 5 minutes (300s), checkperiod is 120s)
+const cache = new NodeCache({ stdTTL: 300, checkperiod: 120 });
 
 // Determine demo mode status based on env
 const API_KEY = process.env.OPENWEATHER_API_KEY;
