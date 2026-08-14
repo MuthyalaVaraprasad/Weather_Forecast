@@ -21,8 +21,8 @@ A full-stack, API-driven weather forecasting application providing real-time wea
 * **Dynamic Weather Animations**: Fluid CSS keyframe background animations mapping particle nodes to active weather codes (star twinkling, cloud cover, falling snow, rain, and stormy lightning).
 * **Wind/Radar Map**: Responsive live Windy.com wind vector map iframe tracking coordinates.
 * **Loading States**: Full-screen loader overlay displaying dynamic text matching active city lookups (e.g., *"Searching Hyderabad..."*).
-* **Error Handling**: Custom mappings for OWM response exceptions (401, 404, 429, 5xx) to clear, readable toast alerts.
-* **Retry Functionality**: Integrated inline and overlay Retry buttons to reload data on network fail.
+* **Error Handling**: Custom mappings for OWM response exceptions (401, 404, 429, 503, connection errors) to clear, readable toast alerts.
+* **Retry Functionality**: Integrated keyboard shortcuts, inline refresh triggers, and overlay Retry buttons to reload data on network fail.
 * **Offline Support**: Handles browser disconnect states gracefully via connection trackers.
 * **Local Fallback Weather Data**: Displays last-known weather data on connection loss instead of breaking layouts.
 * **Server-Side Caching**: 5-minute in-memory caching mapping search and coordinate parameters to reduce API traffic.
@@ -70,7 +70,7 @@ Fetches comprehensive weather, forecast, and air pollution details for a target 
 * **Query Parameters**:
   * `city` (string) - *Optional*. Resolves name queries (e.g., `/api/weather?city=Hyderabad`).
   * `lat` & `lon` (numbers) - *Optional*. Resolves direct coordinates (e.g., `/api/weather?lat=17.385&lon=78.486`).
-* **Response**: Combined JSON payload mapping current conditions, 24-hour hourly slots, 7-day daily values, AQI components, and geocoded name tags.
+* **Response**: Combined JSON payload mapping current conditions, 24-hour hourly slots, 5-day daily values, AQI components, and geocoded name tags.
 
 ### 2. `GET /api/search`
 Queries location matches for search bar autocompletion.
@@ -85,7 +85,7 @@ Queries location matches for search bar autocompletion.
 * **Hidden API Keys**: All OpenWeatherMap requests are proxy-routed. The browser never accesses the private `OPENWEATHER_API_KEY`.
 * **Git Ignored Secrets**: `.env` and `server/.env` files are ignored by Git.
 * **CORS Restrictions**: Express middleware permits API access only to configured origins.
-* **Input Validation**: Search queries are sanitized against malicious scripts using a strict regex allowing alphanumeric characters: `/^[a-zA-Z0-9\s-,\u00C0-\u017F]+$/`.
+* **Input Validation**: Search queries are sanitized against malicious scripts using a strict regex allowing alphanumeric characters and parentheses: `/^[a-zA-Z0-9\s-,\(\)\u00C0-\u017F]+$/`.
 * **Request Timeout**: Outbound service fetches to external endpoints enforce a strict **8-second timeout** to avoid resource leaks.
 
 ---
@@ -94,7 +94,7 @@ Queries location matches for search bar autocompletion.
 
 * **401 Invalid Key**: Handled gracefully and notifies coordinates to check backend credentials.
 * **404 City Not Found**: Bubbles up clean warnings: *"City not found. Please check the city name and try again."*
-* **Offline Fallbacks**: Displays previously saved local backups. A warning is shown next to the timestamp: *"Showing cached fallback data (from: [Time])"*.
+* **Offline Fallbacks**: Displays previously saved local backups. A warning is shown next to the timestamp: "Showing cached data (from: [Time])".
 * **Different City Isolation**: Local caches are isolated per city, preventing one city from displaying stale data belonging to another.
 
 ---
