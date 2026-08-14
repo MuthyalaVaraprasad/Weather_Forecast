@@ -482,6 +482,25 @@ header {
     color: var(--text-muted);
 }
 
+.suggestion-item.active-highlight {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.suggestion-status {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 1.25rem;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.85rem;
+}
+
+.suggestion-status.error-text {
+    color: var(--accent-red);
+}
+
+
 /* Celsius/Fahrenheit toggle slider pill */
 .btn-unit-toggle {
     background: rgba(15, 23, 42, 0.45);
@@ -834,7 +853,7 @@ header {
     font-weight: 600;
 }
 
-/* 7-Day Forecast Section */
+/* 5-Day Forecast Section */
 .daily-card {
     padding: 1.5rem;
 }

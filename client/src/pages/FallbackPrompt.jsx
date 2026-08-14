@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { MapPinOff, MapPin, RefreshCw } from 'lucide-react';
 
 /**
@@ -15,8 +15,16 @@ export default function FallbackPrompt({
   setIsModalSuggestionsActive,
   modalSearchContainerRef,
   hasError,
-  lastCoords
+  lastCoords,
+  isModalSuggestionsLoading,
+  modalSuggestionsError
 }) {
+  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
+
+  // Reset active suggestion index when suggestions list updates
+  useEffect(() => {
+    setActiveSuggestionIndex(-1);
+  }, [modalSuggestions]);
   return (
     <div className="location-prompt-overlay">
       <div className="glass-panel prompt-card">
@@ -48,27 +56,83 @@ export default function FallbackPrompt({
               value={modalSearchTerm}
               onChange={(e) => handleModalSearchChange(e.target.value)}
               aria-label="Search for a city manually"
+              role="combobox"
+              aria-autocomplete="list"
+              aria-controls="modal-suggestions-list"
+              aria-expanded={isModalSuggestionsActive && (isModalSuggestionsLoading || modalSuggestions.length > 0 || modalSuggestionsError !== null)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  const trimmed = modalSearchTerm.trim();
-                  if (trimmed !== '') {
-                    fetchWeather(trimmed);
+                if (e.key === 'ArrowDown') {
+                  e.preventDefault();
+                  if (!isModalSuggestionsActive) {
+                    setIsModalSuggestionsActive(true);
+                  } else if (modalSuggestions.length > 0) {
+                    setActiveSuggestionIndex((prev) => (prev + 1) % modalSuggestions.length);
+                  }
+                } else if (e.key === 'ArrowUp') {
+                  e.preventDefault();
+                  if (isModalSuggestionsActive && modalSuggestions.length > 0) {
+                    setActiveSuggestionIndex((prev) => (prev - 1 + modalSuggestions.length) % modalSuggestions.length);
+                  }
+                } else if (e.key === 'Escape') {
+                  setIsModalSuggestionsActive(false);
+                  setActiveSuggestionIndex(-1);
+                } else if (e.key === 'Enter') {
+                  if (isModalSuggestionsActive && activeSuggestionIndex >= 0 && activeSuggestionIndex < modalSuggestions.length) {
+                    const selectedCity = modalSuggestions[activeSuggestionIndex];
+                    fetchWeather({ 
+                      lat: selectedCity.latitude, 
+                      lon: selectedCity.longitude, 
+                      name: `${selectedCity.name}, ${selectedCity.country}` 
+                    });
                     setModalSearchTerm('');
                     setIsModalSuggestionsActive(false);
+                    setActiveSuggestionIndex(-1);
+                  } else {
+                    const trimmed = modalSearchTerm.trim();
+                    if (trimmed !== '') {
+                      fetchWeather(trimmed);
+                      setModalSearchTerm('');
+                      setIsModalSuggestionsActive(false);
+                      setActiveSuggestionIndex(-1);
+                    }
                   }
                 }
               }}
             />
           </div>
-          <div className={`suggestions-box ${isModalSuggestionsActive ? 'active' : ''}`}>
-            {modalSuggestions.map((city, idx) => (
+          <div 
+            id="modal-suggestions-list"
+            role="listbox"
+            className={`suggestions-box ${isModalSuggestionsActive ? 'active' : ''}`}
+          >
+            {isModalSuggestionsLoading && (
+              <div className="suggestion-status">
+                <RefreshCw className="spinner-icon" style={{ width: 14, height: 14, animation: 'spin 1s linear infinite' }} />
+                <span>Searching locations...</span>
+              </div>
+            )}
+            {modalSuggestionsError && (
+              <div className="suggestion-status error-text">
+                <span>{modalSuggestionsError}</span>
+              </div>
+            )}
+            {!isModalSuggestionsLoading && !modalSuggestionsError && modalSuggestions.length === 0 && modalSearchTerm.trim().length >= 2 && (
+              <div className="suggestion-status">
+                <span>No locations found</span>
+              </div>
+            )}
+            {!isModalSuggestionsLoading && !modalSuggestionsError && modalSuggestions.map((city, idx) => (
               <div 
                 key={idx} 
-                className="suggestion-item"
+                id={`modal-suggestion-item-${idx}`}
+                role="option"
+                aria-selected={idx === activeSuggestionIndex}
+                className={`suggestion-item ${idx === activeSuggestionIndex ? 'active-highlight' : ''}`}
                 onClick={() => {
                   fetchWeather({ lat: city.latitude, lon: city.longitude, name: `${city.name}, ${city.country}` });
                   setModalSearchTerm('');
                   setIsModalSuggestionsActive(false);
+                  setActiveSuggestionIndex(-1);
                 }}
               >
                 <MapPin style={{ width: 16, color: 'var(--accent-blue)' }} />

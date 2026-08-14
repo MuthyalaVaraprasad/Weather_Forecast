@@ -10,7 +10,7 @@ A full-stack, API-driven weather forecasting application providing real-time wea
 
 * **Current Weather**: Displays real-time temperature, condition summaries, and high/low ranges.
 * **24-Hour Hourly Forecast**: Scrollable horizontal timeline displaying temperature, rain risk percentages, and icons for the next 24 hours.
-* **7-Day Forecast**: Weekly Apple-style relative bar forecast visualizing minimum and maximum boundaries.
+* **5-Day Forecast**: Weekly Apple-style relative bar forecast visualizing minimum and maximum boundaries.
 * **AQI / Pollution Information**: Live Air Quality Index tracking mapped to qualitative scales (*Good, Fair, Moderate, Poor, Very Poor*) and particulate density card displays (PM2.5, PM10, CO, NO2).
 * **City Search**: Input-validated text fields mapping autocomplete queries.
 * **Search Suggestions**: Instant drop-down menu autocompletion of matching global cities.

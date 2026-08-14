@@ -252,7 +252,7 @@ export const fetchWeatherData = async (lat, lon, apiKey) => {
   const dailyPops = [];
 
   // Group stats calculations
-  Object.keys(dailyGroups).slice(0, 7).forEach(dateStr => {
+  Object.keys(dailyGroups).slice(0, 5).forEach(dateStr => {
     const daySlots = dailyGroups[dateStr];
     const temps = daySlots.map(s => s.main.temp);
     const minTemp = Math.min(...temps);
@@ -337,11 +337,11 @@ export const getMockWeatherData = async (lat, lon) => {
       precipitation_probability: [10, 20, 20, 15, 5, 0, 0, 10]
     },
     daily: {
-      time: Array.from({ length: 6 }, (_, i) => new Date(Date.now() + i * 86400000).toISOString().split('T')[0]),
-      weather_code: [2, 3, 61, 95, 0, 2],
-      temperature_2m_max: [19.0, 17.5, 15.2, 16.8, 21.0, 20.2],
-      temperature_2m_min: [13.0, 12.2, 11.0, 10.5, 12.0, 13.5],
-      precipitation_probability_max: [20, 30, 80, 90, 5, 15]
+      time: Array.from({ length: 5 }, (_, i) => new Date(Date.now() + i * 86400000).toISOString().split('T')[0]),
+      weather_code: [2, 3, 61, 95, 0],
+      temperature_2m_max: [19.0, 17.5, 15.2, 16.8, 21.0],
+      temperature_2m_min: [13.0, 12.2, 11.0, 10.5, 12.0],
+      precipitation_probability_max: [20, 30, 80, 90, 5]
     },
     aqi: {
       index: mockAqiIndex,

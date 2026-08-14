@@ -3,7 +3,7 @@ import { Calendar, Droplet } from 'lucide-react';
 import WeatherIcon, { WEATHER_CODES } from './WeatherIcon';
 
 /**
- * 7-Day extended daily forecast mapping list with Apple-style relative bar fills.
+ * 5-Day extended daily forecast mapping list with Apple-style relative bar fills.
  */
 export default function DailyForecast({ daily, isCelsius, toFahrenheit }) {
   if (!daily) return null;
@@ -16,7 +16,7 @@ export default function DailyForecast({ daily, isCelsius, toFahrenheit }) {
     <section className="glass-panel daily-card">
       <h2 className="card-title">
         <Calendar />
-        <span>7-Day Forecast</span>
+        <span>5-Day Forecast</span>
       </h2>
       <div className="daily-forecast-list">
         {daily.time.map((timeStr, idx) => {

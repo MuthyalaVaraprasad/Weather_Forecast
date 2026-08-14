@@ -26,6 +26,12 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// Prevent API caching at browser and CDN proxy levels
+app.use((req, res, next) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+  next();
+});
+
 // Set up serverless API routes
 app.use('/api', weatherRouter);
 

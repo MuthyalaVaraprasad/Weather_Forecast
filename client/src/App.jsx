@@ -49,12 +49,16 @@ export default function App() {
   const [searchTerm, setSearchTerm] = useState('');
   const [suggestions, setSuggestions] = useState([]);
   const [isSuggestionsActive, setIsSuggestionsActive] = useState(false);
+  const [isSuggestionsLoading, setIsSuggestionsLoading] = useState(false);
+  const [suggestionsError, setSuggestionsError] = useState(null);
   const searchContainerRef = useRef(null);
 
   // Modal Search States
   const [modalSearchTerm, setModalSearchTerm] = useState('');
   const [modalSuggestions, setModalSuggestions] = useState([]);
   const [isModalSuggestionsActive, setIsModalSuggestionsActive] = useState(false);
+  const [isModalSuggestionsLoading, setIsModalSuggestionsLoading] = useState(false);
+  const [modalSuggestionsError, setModalSuggestionsError] = useState(null);
   const modalSearchContainerRef = useRef(null);
 
   // Error Toast States
@@ -307,14 +311,19 @@ export default function App() {
     window.addEventListener('online', handleOnlineStatus);
     return () => window.removeEventListener('online', handleOnlineStatus);
   }, [weatherData]);
-
   // Header Auto-complete Suggestion Debouncer
   useEffect(() => {
     if (searchTerm.trim().length < 2) {
       setSuggestions([]);
       setIsSuggestionsActive(false);
+      setIsSuggestionsLoading(false);
+      setSuggestionsError(null);
       return;
     }
+
+    setIsSuggestionsLoading(true);
+    setIsSuggestionsActive(true);
+    setSuggestionsError(null);
 
     const timer = setTimeout(async () => {
       if (suggestionsAbortRef.current) {
@@ -327,11 +336,17 @@ export default function App() {
         const data = await apiService.searchLocations(searchTerm, controller.signal);
         if (data && data.results) {
           setSuggestions(data.results);
-          setIsSuggestionsActive(true);
+          setSuggestionsError(null);
+        } else {
+          setSuggestions([]);
         }
       } catch (e) {
         if (e.name === 'AbortError') return;
         console.error("Autocomplete search error:", e);
+        setSuggestions([]);
+        setSuggestionsError("Location search is temporarily unavailable. Please try again.");
+      } finally {
+        setIsSuggestionsLoading(false);
       }
     }, 300);
 
@@ -348,8 +363,14 @@ export default function App() {
     if (modalSearchTerm.trim().length < 2) {
       setModalSuggestions([]);
       setIsModalSuggestionsActive(false);
+      setIsModalSuggestionsLoading(false);
+      setModalSuggestionsError(null);
       return;
     }
+
+    setIsModalSuggestionsLoading(true);
+    setIsModalSuggestionsActive(true);
+    setModalSuggestionsError(null);
 
     const timer = setTimeout(async () => {
       if (modalSuggestionsAbortRef.current) {
@@ -362,11 +383,17 @@ export default function App() {
         const data = await apiService.searchLocations(modalSearchTerm, controller.signal);
         if (data && data.results) {
           setModalSuggestions(data.results);
-          setIsModalSuggestionsActive(true);
+          setModalSuggestionsError(null);
+        } else {
+          setModalSuggestions([]);
         }
       } catch (e) {
         if (e.name === 'AbortError') return;
         console.error("Modal autocomplete search error:", e);
+        setModalSuggestions([]);
+        setModalSuggestionsError("Location search is temporarily unavailable. Please try again.");
+      } finally {
+        setIsModalSuggestionsLoading(false);
       }
     }, 300);
 
@@ -377,7 +404,6 @@ export default function App() {
       }
     };
   }, [modalSearchTerm]);
-
   // Click listeners to close suggestions boxes on clicking outside
   useEffect(() => {
     const handleOutsideClick = (e) => {
@@ -491,6 +517,8 @@ export default function App() {
           modalSearchContainerRef={modalSearchContainerRef}
           hasError={hasError}
           lastCoords={lastCoords}
+          isModalSuggestionsLoading={isModalSuggestionsLoading}
+          modalSuggestionsError={modalSuggestionsError}
         />
       )}
 
@@ -518,6 +546,8 @@ export default function App() {
           lastCoords={lastCoords}
           toFahrenheit={toFahrenheit}
           formatTemp={formatTemp}
+          isSuggestionsLoading={isSuggestionsLoading}
+          suggestionsError={suggestionsError}
         />
       )}
 

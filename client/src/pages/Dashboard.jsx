@@ -33,11 +33,20 @@ export default function Dashboard({
   isFallback,
   lastCoords,
   toFahrenheit,
-  formatTemp
+  formatTemp,
+  isSuggestionsLoading,
+  suggestionsError
 }) {
   const current = weatherData.current;
   const daily = weatherData.daily;
   const hourly = weatherData.hourly;
+
+  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
+
+  // Reset active suggestion index when suggestions list updates
+  useEffect(() => {
+    setActiveSuggestionIndex(-1);
+  }, [suggestions]);
 
   const currentIcon = WEATHER_CODES[current.weather_code]?.icon || 'cloud';
   const currentCodeLabel = WEATHER_CODES[current.weather_code]?.label || 'Cloudy';
@@ -88,13 +97,45 @@ export default function Dashboard({
                 value={searchTerm}
                 onChange={(e) => handleSearchChange(e.target.value)}
                 aria-label="Search for a city"
+                role="combobox"
+                aria-autocomplete="list"
+                aria-controls="suggestions-list"
+                aria-expanded={isSuggestionsActive && (isSuggestionsLoading || suggestions.length > 0 || suggestionsError !== null)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    const trimmed = searchTerm.trim();
-                    if (trimmed !== '') {
-                      fetchWeather(trimmed);
+                  if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    if (!isSuggestionsActive) {
+                      setIsSuggestionsActive(true);
+                    } else if (suggestions.length > 0) {
+                      setActiveSuggestionIndex((prev) => (prev + 1) % suggestions.length);
+                    }
+                  } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    if (isSuggestionsActive && suggestions.length > 0) {
+                      setActiveSuggestionIndex((prev) => (prev - 1 + suggestions.length) % suggestions.length);
+                    }
+                  } else if (e.key === 'Escape') {
+                    setIsSuggestionsActive(false);
+                    setActiveSuggestionIndex(-1);
+                  } else if (e.key === 'Enter') {
+                    if (isSuggestionsActive && activeSuggestionIndex >= 0 && activeSuggestionIndex < suggestions.length) {
+                      const selectedCity = suggestions[activeSuggestionIndex];
+                      fetchWeather({ 
+                        lat: selectedCity.latitude, 
+                        lon: selectedCity.longitude, 
+                        name: `${selectedCity.name}, ${selectedCity.country}` 
+                      });
                       setSearchTerm('');
                       setIsSuggestionsActive(false);
+                      setActiveSuggestionIndex(-1);
+                    } else {
+                      const trimmed = searchTerm.trim();
+                      if (trimmed !== '') {
+                        fetchWeather(trimmed);
+                        setSearchTerm('');
+                        setIsSuggestionsActive(false);
+                        setActiveSuggestionIndex(-1);
+                      }
                     }
                   }
                 }}
@@ -108,15 +149,39 @@ export default function Dashboard({
                 <MapPin />
               </button>
             </div>
-            <div className={`suggestions-box ${isSuggestionsActive ? 'active' : ''}`}>
-              {suggestions.map((city, idx) => (
+            <div 
+              id="suggestions-list"
+              role="listbox"
+              className={`suggestions-box ${isSuggestionsActive ? 'active' : ''}`}
+            >
+              {isSuggestionsLoading && (
+                <div className="suggestion-status">
+                  <RefreshCw className="spinner-icon" style={{ width: 14, height: 14, animation: 'spin 1s linear infinite' }} />
+                  <span>Searching locations...</span>
+                </div>
+              )}
+              {suggestionsError && (
+                <div className="suggestion-status error-text">
+                  <span>{suggestionsError}</span>
+                </div>
+              )}
+              {!isSuggestionsLoading && !suggestionsError && suggestions.length === 0 && searchTerm.trim().length >= 2 && (
+                <div className="suggestion-status">
+                  <span>No locations found</span>
+                </div>
+              )}
+              {!isSuggestionsLoading && !suggestionsError && suggestions.map((city, idx) => (
                 <div 
                   key={idx} 
-                  className="suggestion-item"
+                  id={`suggestion-item-${idx}`}
+                  role="option"
+                  aria-selected={idx === activeSuggestionIndex}
+                  className={`suggestion-item ${idx === activeSuggestionIndex ? 'active-highlight' : ''}`}
                   onClick={() => {
                     fetchWeather({ lat: city.latitude, lon: city.longitude, name: `${city.name}, ${city.country}` });
                     setSearchTerm('');
                     setIsSuggestionsActive(false);
+                    setActiveSuggestionIndex(-1);
                   }}
                 >
                   <MapPin style={{ width: 16, color: 'var(--accent-blue)' }} />
@@ -317,7 +382,7 @@ export default function Dashboard({
           />
         </div>
 
-        {/* Right Column: Radar Map & 7-Day Forecast */}
+        {/* Right Column: Radar Map & 5-Day Forecast */}
         <div className="side-column">
           {/* Interactive Radar Map widget */}
           <section className="glass-panel map-card">
@@ -392,7 +457,7 @@ export default function Dashboard({
             </div>
           </section>
 
-          {/* 7-Day Forecast relative bars card */}
+          {/* 5-Day Forecast relative bars card */}
           <DailyForecast 
             daily={daily}
             isCelsius={isCelsius}
