@@ -37,8 +37,8 @@ export const getSearch = async (req, res, next) => {
     return res.status(400).json({ error: "Search query is too long." });
   }
 
-  // Validate Input: permit letters, numbers, spaces, hyphens, commas and standard accents (prevent injection)
-  const cityRegex = /^[a-zA-Z0-9\s-,\u00C0-\u017F]+$/;
+  // Validate Input: permit letters, numbers, spaces, hyphens, commas, parentheses and standard accents (prevent injection)
+  const cityRegex = /^[a-zA-Z0-9\s-,\(\)\u00C0-\u017F]+$/;
   if (!cityRegex.test(query)) {
     return res.status(400).json({ error: "Invalid characters in search input." });
   }
@@ -114,7 +114,7 @@ export const getWeather = async (req, res, next) => {
       res.status(400);
       return next(new Error("City name query is too long."));
     }
-    const cityRegex = /^[a-zA-Z0-9\s-,\u00C0-\u017F]+$/;
+    const cityRegex = /^[a-zA-Z0-9\s-,\(\)\u00C0-\u017F]+$/;
     if (!cityRegex.test(city)) {
       res.status(400);
       return next(new Error("City name contains invalid characters."));
