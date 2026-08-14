@@ -62,7 +62,9 @@ export const getCoordsByCityName = async (city, apiKey) => {
     const response = await axios.get(geoUrl, { timeout: 8000 });
     const data = response.data;
     if (!data || data.length === 0) {
-      throw new Error("City not found. Please check the city name and try again.");
+      const err = new Error("City not found. Please check the city name and try again.");
+      err.status = 404;
+      throw err;
     }
     return {
       lat: data[0].lat,
@@ -87,13 +89,36 @@ export const getCoordsByCityName = async (city, apiKey) => {
 
 // Fallback Mock resolver
 export const getMockCoordsByCityName = (city) => {
-  if (city.toLowerCase() === 'invalid' || city.toLowerCase() === 'error') {
-    throw new Error("City not found. Please check the city name and try again.");
+  const norm = city.trim().toLowerCase();
+  
+  const mockDatabase = {
+    "hyderabad": { lat: 17.3850, lon: 78.4867, name: "Hyderabad, IN" },
+    "delhi": { lat: 28.6139, lon: 77.2090, name: "Delhi, IN" },
+    "mumbai": { lat: 19.0760, lon: 72.8777, name: "Mumbai, IN" },
+    "bengaluru": { lat: 12.9716, lon: 77.5946, name: "Bengaluru, IN" },
+    "chennai": { lat: 13.0827, lon: 80.2707, name: "Chennai, IN" },
+    "kolkata": { lat: 22.5726, lon: 88.3639, name: "Kolkata, IN" },
+    "london": { lat: 51.5074, lon: -0.1278, name: "London, GB" },
+    "new york": { lat: 40.7128, lon: -74.0060, name: "New York, US" },
+    "tokyo": { lat: 35.6762, lon: 139.6503, name: "Tokyo, JP" },
+    "paris": { lat: 48.8566, lon: 2.3522, name: "Paris, FR" },
+    "sydney": { lat: -33.8688, lon: 151.2093, name: "Sydney, AU" },
+    "singapore": { lat: 1.3521, lon: 103.8198, name: "Singapore, SG" }
+  };
+
+  let matchedKey = Object.keys(mockDatabase).find(k => norm === k || norm.includes(k) || k.includes(norm));
+
+  if (!matchedKey) {
+    const err = new Error("City not found. Please check the city name and try again.");
+    err.status = 404;
+    throw err;
   }
+
+  const match = mockDatabase[matchedKey];
   return {
-    lat: 51.5074,
-    lon: -0.1278,
-    name: `${city.charAt(0).toUpperCase() + city.slice(1)} (Demo)`
+    lat: match.lat,
+    lon: match.lon,
+    name: `${match.name} (Demo)`
   };
 };
 

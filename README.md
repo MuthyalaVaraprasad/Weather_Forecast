@@ -85,7 +85,7 @@ Queries location matches for search bar autocompletion.
 * **Hidden API Keys**: All OpenWeatherMap requests are proxy-routed. The browser never accesses the private `OPENWEATHER_API_KEY`.
 * **Git Ignored Secrets**: `.env` and `server/.env` files are ignored by Git.
 * **CORS Restrictions**: Express middleware permits API access only to configured origins.
-* **Input Validation**: Search queries are sanitized against malicious scripts using a strict regex: `/^[a-zA-Z\s-,\u00C0-\u017F]+$/`.
+* **Input Validation**: Search queries are sanitized against malicious scripts using a strict regex allowing alphanumeric characters: `/^[a-zA-Z0-9\s-,\u00C0-\u017F]+$/`.
 * **Request Timeout**: Outbound service fetches to external endpoints enforce a strict **8-second timeout** to avoid resource leaks.
 
 ---
@@ -105,6 +105,7 @@ Create `server/.env` with these keys (which is git-excluded):
 ```env
 PORT=5000
 OPENWEATHER_API_KEY=your_openweathermap_api_key_here
+DEMO_MODE=false
 ```
 
 ---

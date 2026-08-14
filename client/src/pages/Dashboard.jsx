@@ -67,13 +67,7 @@ export default function Dashboard({
     return () => clearTimeout(timer);
   }, [activeLat, activeLon]);
 
-  // UV evaluation
-  const uvVal = daily ? daily.uv_index_max[0] : 0;
-  let uvTextStr = 'Low';
-  if (uvVal > 2) uvTextStr = 'Moderate';
-  if (uvVal > 5) uvTextStr = 'High';
-  if (uvVal > 7) uvTextStr = 'Very High';
-  if (uvVal > 10) uvTextStr = 'Extreme';
+
 
   return (
     <div className="app-container">
@@ -93,10 +87,22 @@ export default function Dashboard({
                 placeholder="Search for a city..." 
                 value={searchTerm}
                 onChange={(e) => handleSearchChange(e.target.value)}
+                aria-label="Search for a city"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    const trimmed = searchTerm.trim();
+                    if (trimmed !== '') {
+                      fetchWeather(trimmed);
+                      setSearchTerm('');
+                      setIsSuggestionsActive(false);
+                    }
+                  }
+                }}
               />
               <button 
                 className="btn-locate" 
                 title="Use current location"
+                aria-label="Use current location"
                 onClick={getUserLocation}
               >
                 <MapPin />
@@ -108,7 +114,7 @@ export default function Dashboard({
                   key={idx} 
                   className="suggestion-item"
                   onClick={() => {
-                    fetchWeather(`${city.name}, ${city.country}`);
+                    fetchWeather({ lat: city.latitude, lon: city.longitude, name: `${city.name}, ${city.country}` });
                     setSearchTerm('');
                     setIsSuggestionsActive(false);
                   }}
@@ -126,6 +132,7 @@ export default function Dashboard({
           <button 
             className="btn-unit-toggle" 
             onClick={() => setIsCelsius(!isCelsius)}
+            aria-label={`Switch to ${isCelsius ? 'Fahrenheit' : 'Celsius'}`}
           >
             <span className={isCelsius ? 'active' : ''}>°C</span>
             <span className="unit-divider">|</span>
@@ -145,7 +152,7 @@ export default function Dashboard({
                   <button 
                     key={idx} 
                     className="favorite-chip"
-                    onClick={() => fetchWeather(city.name)}
+                    onClick={() => fetchWeather({ lat: city.lat, lon: city.lon, name: city.name })}
                   >
                     <MapPin style={{ width: 11, height: 11, marginRight: 4, color: 'var(--accent-yellow)' }} />
                     {city.name.split(',')[0]}
@@ -163,7 +170,7 @@ export default function Dashboard({
                   <button 
                     key={idx} 
                     className="favorite-chip"
-                    onClick={() => fetchWeather(city.name)}
+                    onClick={() => fetchWeather({ lat: city.lat, lon: city.lon, name: city.name })}
                   >
                     <Clock style={{ width: 11, height: 11, marginRight: 4, color: 'var(--accent-blue)' }} />
                     {city.name.split(',')[0]}
@@ -188,6 +195,7 @@ export default function Dashboard({
                 onClick={toggleFavorite} 
                 className={`btn-favorite ${isCurrentFavorite ? 'starred' : ''}`}
                 title={isCurrentFavorite ? "Remove from Favorites" : "Add to Favorites"}
+                aria-label={isCurrentFavorite ? "Remove from Favorites" : "Add to Favorites"}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', marginLeft: 8 }}
               >
                 <svg 

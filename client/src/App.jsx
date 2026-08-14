@@ -31,6 +31,11 @@ export default function App() {
   const [isFallback, setIsFallback] = useState(false);
   const lastCoords = useRef({ lat: 51.5074, lon: -0.1278 });
 
+  // Abort Controllers Refs
+  const weatherAbortRef = useRef(null);
+  const suggestionsAbortRef = useRef(null);
+  const modalSuggestionsAbortRef = useRef(null);
+
   // Favorites & Search History Hook
   const { 
     favorites, 
@@ -106,6 +111,12 @@ export default function App() {
 
   // API Call Coordinator
   const fetchWeather = async (lat, lon, cityName = '') => {
+    if (weatherAbortRef.current) {
+      weatherAbortRef.current.abort();
+    }
+    const controller = new AbortController();
+    weatherAbortRef.current = controller;
+
     if (!navigator.onLine) {
       setHasError(true);
       const fallbackData = getOfflineFallback(cityName);
@@ -114,8 +125,9 @@ export default function App() {
         setIsFallback(true);
         showError("Offline Mode: Showing cached weather.");
       } else {
+        setWeatherData(null);
+        setShowPrompt(true);
         showError("Offline Mode: No local backup found.");
-        if (!weatherData) setShowPrompt(true);
       }
       return;
     }
@@ -126,7 +138,7 @@ export default function App() {
     lastCoords.current = { lat, lon };
 
     try {
-      const data = await apiService.fetchWeather(lat, lon);
+      const data = await apiService.fetchWeather(lat, lon, controller.signal);
       setWeatherData(data);
       setHasError(false);
       setIsFallback(false);
@@ -146,23 +158,33 @@ export default function App() {
       // Append successfully resolved query to history
       addToHistory(cityName || data.cityName, lat, lon);
     } catch (e) {
+      if (e.name === 'AbortError') return;
       console.error("Fetch weather details error:", e);
       setHasError(true);
       const fallbackData = getOfflineFallback(cityName);
       if (fallbackData) {
         setWeatherData(fallbackData);
         setIsFallback(true);
-        showError("Weather service is temporarily unavailable. Showing the last available data.");
+        showError(`Weather service is temporarily unavailable. Showing cached data for ${fallbackData.cityName}.`);
       } else {
-        showError("Weather service is temporarily unavailable. Showing fallback screen.");
-        if (!weatherData) setShowPrompt(true);
+        setWeatherData(null);
+        setShowPrompt(true);
+        showError(e.message || `${cityName || "Selected location"} weather is currently unavailable.`);
       }
     } finally {
-      setLoading(false);
+      if (weatherAbortRef.current === controller) {
+        setLoading(false);
+      }
     }
   };
 
   const fetchWeatherByCity = async (city) => {
+    if (weatherAbortRef.current) {
+      weatherAbortRef.current.abort();
+    }
+    const controller = new AbortController();
+    weatherAbortRef.current = controller;
+
     if (!navigator.onLine) {
       setHasError(true);
       const fallbackData = getOfflineFallback(city);
@@ -171,8 +193,9 @@ export default function App() {
         setIsFallback(true);
         showError("Offline Mode: Showing cached weather.");
       } else {
+        setWeatherData(null);
+        setShowPrompt(true);
         showError("Offline Mode: No local backup found.");
-        if (!weatherData) setShowPrompt(true);
       }
       return;
     }
@@ -182,7 +205,7 @@ export default function App() {
     setShowPrompt(false);
 
     try {
-      const data = await apiService.fetchWeatherByCity(city);
+      const data = await apiService.fetchWeatherByCity(city, controller.signal);
       setWeatherData(data);
       setHasError(false);
       setIsFallback(false);
@@ -204,19 +227,23 @@ export default function App() {
       // Append successfully resolved query to history
       addToHistory(data.cityName, data.latitude, data.longitude);
     } catch (e) {
+      if (e.name === 'AbortError') return;
       console.error("Fetch weather by city error:", e);
       setHasError(true);
       const fallbackData = getOfflineFallback(city);
       if (fallbackData) {
         setWeatherData(fallbackData);
         setIsFallback(true);
-        showError("Weather service is temporarily unavailable. Showing the last available data.");
+        showError(`Weather service is temporarily unavailable. Showing cached data for ${fallbackData.cityName}.`);
       } else {
-        showError("Weather service is temporarily unavailable. Showing fallback screen.");
-        if (!weatherData) setShowPrompt(true);
+        setWeatherData(null);
+        setShowPrompt(true);
+        showError(e.message || `${city} weather is currently unavailable.`);
       }
     } finally {
-      setLoading(false);
+      if (weatherAbortRef.current === controller) {
+        setLoading(false);
+      }
     }
   };
 
@@ -290,18 +317,30 @@ export default function App() {
     }
 
     const timer = setTimeout(async () => {
+      if (suggestionsAbortRef.current) {
+        suggestionsAbortRef.current.abort();
+      }
+      const controller = new AbortController();
+      suggestionsAbortRef.current = controller;
+
       try {
-        const data = await apiService.searchLocations(searchTerm);
+        const data = await apiService.searchLocations(searchTerm, controller.signal);
         if (data && data.results) {
           setSuggestions(data.results);
           setIsSuggestionsActive(true);
         }
       } catch (e) {
+        if (e.name === 'AbortError') return;
         console.error("Autocomplete search error:", e);
       }
     }, 300);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      if (suggestionsAbortRef.current) {
+        suggestionsAbortRef.current.abort();
+      }
+    };
   }, [searchTerm]);
 
   // Fallback Modal Autocomplete Suggestion Debouncer
@@ -313,18 +352,30 @@ export default function App() {
     }
 
     const timer = setTimeout(async () => {
+      if (modalSuggestionsAbortRef.current) {
+        modalSuggestionsAbortRef.current.abort();
+      }
+      const controller = new AbortController();
+      modalSuggestionsAbortRef.current = controller;
+
       try {
-        const data = await apiService.searchLocations(modalSearchTerm);
+        const data = await apiService.searchLocations(modalSearchTerm, controller.signal);
         if (data && data.results) {
           setModalSuggestions(data.results);
           setIsModalSuggestionsActive(true);
         }
       } catch (e) {
+        if (e.name === 'AbortError') return;
         console.error("Modal autocomplete search error:", e);
       }
     }, 300);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      if (modalSuggestionsAbortRef.current) {
+        modalSuggestionsAbortRef.current.abort();
+      }
+    };
   }, [modalSearchTerm]);
 
   // Click listeners to close suggestions boxes on clicking outside
@@ -365,12 +416,12 @@ export default function App() {
 
   // Input validation handlers
   const handleSearchChange = (val) => {
-    const filtered = val.replace(/[^a-zA-Z\s-,\u00C0-\u017F]/g, '');
+    const filtered = val.replace(/[^a-zA-Z0-9\s-,\u00C0-\u017F]/g, '');
     setSearchTerm(filtered);
   };
 
   const handleModalSearchChange = (val) => {
-    const filtered = val.replace(/[^a-zA-Z\s-,\u00C0-\u017F]/g, '');
+    const filtered = val.replace(/[^a-zA-Z0-9\s-,\u00C0-\u017F]/g, '');
     setModalSearchTerm(filtered);
   };
 
@@ -471,7 +522,7 @@ export default function App() {
       )}
 
       {/* 4. Global Floating Warning Toast alerts */}
-      <div className={`toast ${isToastActive ? 'active' : ''}`}>
+      <div className={`error-toast ${isToastActive ? 'active' : ''}`}>
         <AlertCircle className="toast-icon" />
         <span className="toast-message">{toastMsg}</span>
       </div>

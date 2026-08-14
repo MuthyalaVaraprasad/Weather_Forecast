@@ -32,7 +32,7 @@ export default function FallbackPrompt({
             <button 
               key={city.name} 
               className="btn-quick-city"
-              onClick={() => fetchWeather(city.name)}
+              onClick={() => fetchWeather({ lat: city.lat, lon: city.lon, name: city.name })}
             >
               {city.name}
             </button>
@@ -47,6 +47,17 @@ export default function FallbackPrompt({
               placeholder="Or search for a city manually..."
               value={modalSearchTerm}
               onChange={(e) => handleModalSearchChange(e.target.value)}
+              aria-label="Search for a city manually"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  const trimmed = modalSearchTerm.trim();
+                  if (trimmed !== '') {
+                    fetchWeather(trimmed);
+                    setModalSearchTerm('');
+                    setIsModalSuggestionsActive(false);
+                  }
+                }
+              }}
             />
           </div>
           <div className={`suggestions-box ${isModalSuggestionsActive ? 'active' : ''}`}>
@@ -55,7 +66,7 @@ export default function FallbackPrompt({
                 key={idx} 
                 className="suggestion-item"
                 onClick={() => {
-                  fetchWeather(`${city.name}, ${city.country}`);
+                  fetchWeather({ lat: city.latitude, lon: city.longitude, name: `${city.name}, ${city.country}` });
                   setModalSearchTerm('');
                   setIsModalSuggestionsActive(false);
                 }}

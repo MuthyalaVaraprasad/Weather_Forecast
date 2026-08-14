@@ -12,7 +12,7 @@ export default function HourlyForecast({ hourly, isCelsius, toFahrenheit }) {
     <section className="glass-panel hourly-card">
       <h2 className="card-title">
         <Clock />
-        <span>Hourly Forecast (24h)</span>
+        <span>Next 24 Hours — 3-hour intervals</span>
       </h2>
       <div className="hourly-scroll">
         {hourly.time.map((timeStr, idx) => {
